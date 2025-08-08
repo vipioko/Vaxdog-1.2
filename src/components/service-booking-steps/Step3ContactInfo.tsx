@@ -1,5 +1,5 @@
 import React from 'react';
-import { Control, useWatch } from 'react-hook-form';
+import { Control, useWatch, useFormContext } from 'react-hook-form';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/providers/AuthProvider';
@@ -11,7 +11,7 @@ interface Step3ContactInfoProps {
 
 const Step3ContactInfo: React.FC<Step3ContactInfoProps> = ({ control }) => {
   const { user } = useAuth();
-  const { setValue } = control._form; // Access setValue from the form instance
+  const { setValue } = useFormContext(); // Access setValue from form context
 
   useEffect(() => {
     if (user) {
