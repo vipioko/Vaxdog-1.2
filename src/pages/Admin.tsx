@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // Import Card components
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AllBookingsTable from '@/components/admin/AllBookingsTable';
 import ProductManagement from '@/components/admin/ProductManagement';
@@ -12,8 +12,29 @@ import GroomingServiceManagement from '@/components/admin/GroomingServiceManagem
 import PetHostelManagement from '@/components/admin/PetHostelManagement';
 import GroomingBookingManagement from '@/components/admin/GroomingBookingManagement';
 import PetHostelBookingManagement from '@/components/admin/PetHostelBookingManagement';
+import { useState } from 'react'; // Import useState
+import { useIsMobile } from '@/hooks/use-mobile'; // Import useIsMobile hook
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'; // Import Select components
 
 const Admin = () => {
+  const isMobile = useIsMobile(); // Determine if on mobile
+  const [activeTab, setActiveTab] = useState('doctors'); // State to manage active tab
+
+  // Define tab items for both TabsTrigger and SelectItem
+  const tabItems = [
+    { value: 'doctors', label: 'Doctors' },
+    { value: 'assignments', label: 'Assignments' },
+    { value: 'orders', label: 'Orders' },
+    { value: 'bookings', label: 'Bookings' },
+    { value: 'grooming-bookings', label: 'Grooming Bookings' },
+    { value: 'pet-hostel-bookings', label: 'Pet Hostel Bookings' },
+    { value: 'vaccines', label: 'Vaccines' },
+    { value: 'categories', label: 'Categories' },
+    { value: 'products', label: 'Shop Products' },
+    { value: 'slots', label: 'Manage Slots' },
+    { value: 'services', label: 'Services' },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
@@ -29,43 +50,33 @@ const Admin = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="doctors" className="w-full">
-        {/* --- FIX: MERGED TabsList into one complete component --- */}
-        <TabsList className="flex w-full overflow-x-auto whitespace-nowrap pb-2 scrollbar-hide text-sm bg-slate-800/50 border border-slate-700 rounded-lg p-1 gap-1">
-          <TabsTrigger value="doctors" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0">
-            Doctors
-          </TabsTrigger>
-          <TabsTrigger value="assignments" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0">
-            Assignments
-          </TabsTrigger>
-          <TabsTrigger value="orders" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0">
-            Orders
-          </TabsTrigger>
-          <TabsTrigger value="bookings" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0">
-            Bookings
-          </TabsTrigger>
-          <TabsTrigger value="grooming-bookings" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0">
-            Grooming Bookings
-          </TabsTrigger>
-          <TabsTrigger value="pet-hostel-bookings" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0">
-            Pet Hostel Bookings
-          </TabsTrigger>
-          <TabsTrigger value="vaccines" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0">
-            Vaccines
-          </TabsTrigger>
-          <TabsTrigger value="categories" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0">
-            Categories
-          </TabsTrigger>
-          <TabsTrigger value="products" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0">
-            Shop Products
-          </TabsTrigger>
-          <TabsTrigger value="slots" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0">
-            Manage Slots
-          </TabsTrigger>
-          <TabsTrigger value="services" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0">
-            Services
-          </TabsTrigger>
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        {isMobile ? (
+          <Select value={activeTab} onValueChange={setActiveTab}>
+            <SelectTrigger className="w-full bg-slate-800/50 border border-slate-700 text-white mb-4">
+              <SelectValue placeholder="Select a section" />
+            </SelectTrigger>
+            <SelectContent className="bg-slate-800 border-slate-700 text-white">
+              {tabItems.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <TabsList className="flex w-full overflow-x-auto whitespace-nowrap pb-2 scrollbar-hide text-sm bg-slate-800/50 border border-slate-700 rounded-lg p-1 gap-1">
+            {tabItems.map((item) => (
+              <TabsTrigger
+                key={item.value}
+                value={item.value}
+                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0"
+              >
+                {item.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        )}
         
         <TabsContent value="doctors" className="mt-6">
           <DoctorManagement />
