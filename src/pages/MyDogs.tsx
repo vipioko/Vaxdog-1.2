@@ -147,6 +147,8 @@ const MyDogs = ({ reminderDueSoonDays }: MyDogsProps) => {
       setNewPet({ name: '', breed: '', petType: '', dateOfBirth: '', age: 0, imageUrl: '' });
       setNewPetFile(null);
       setAddDialogOpen(false);
+      setBreedSearch('');
+      setOpenBreedCombobox(false);
     },
     onError: (error: any) => {
       console.error("addDogMutation error", error);
