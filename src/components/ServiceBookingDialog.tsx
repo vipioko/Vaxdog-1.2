@@ -212,7 +212,7 @@ const ServiceBookingDialog: React.FC<ServiceBookingDialogProps> = ({ serviceType
               petType: selectedPet.petType,
             },
             razorpayPaymentId: response.razorpay_payment_id,
-            razorpayOrderId: response.razorpay_order_id,
+            razorpayOrderId: response.razorpay_order_id || null,
           };
 
           if (serviceType === 'grooming') {
