@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, Timestamp, collectionGroup } from 'firebase/firestore'; // Import collectionGroup
 import { db } from '@/firebase';
 import { useAuth } from '@/providers/AuthProvider';
 
@@ -17,59 +17,51 @@ export interface DoctorBooking {
   assignedDoctorId: string;
   createdAt?: Timestamp;
   notes?: string;
+  // Add petDetails directly from transaction if available
+  petDetails?: {
+    name: string;
+    breed: string;
+    petType: string;
+    dateOfBirth: string;
+    age: number;
+  };
 }
 
 const fetchDoctorBookings = async (doctorId: string): Promise<DoctorBooking[]> => {
-  // Query all users' transactions to find bookings assigned to this doctor
   const allBookings: DoctorBooking[] = [];
   
   try {
-    // Get all users
-    const usersSnapshot = await getDocs(collection(db, 'users'));
+    // Use a collectionGroup query to get all transactions assigned to this doctor
+    const transactionsQuery = query(
+      collectionGroup(db, 'transactions'), // Query the 'transactions' collection group
+      where('assignedDoctorId', '==', doctorId),
+      where('status', '==', 'successful')
+    );
+    const transactionsSnapshot = await getDocs(transactionsQuery);
     
-    for (const userDoc of usersSnapshot.docs) {
-      const userId = userDoc.id;
+    transactionsSnapshot.docs.forEach(transactionDoc => {
+      const transactionData = transactionDoc.data();
       
-      // Get transactions for this user
-      const transactionsRef = collection(db, 'users', userId, 'transactions');
-      const transactionsQuery = query(
-        transactionsRef,
-        where('assignedDoctorId', '==', doctorId),
-        where('status', '==', 'successful')
-      );
-      const transactionsSnapshot = await getDocs(transactionsQuery);
+      const booking: DoctorBooking = {
+        id: transactionDoc.id,
+        userId: transactionData.userId, // userId is now directly available from the transaction document
+        customerName: transactionData.customer?.name || 'Unknown Customer',
+        customerPhone: transactionData.customer?.phone || '',
+        customerAddress: transactionData.customer ? 
+          `${transactionData.customer.address}, ${transactionData.customer.city} - ${transactionData.customer.postalCode}` : 
+          undefined,
+        petName: transactionData.dogName,
+        service: transactionData.service,
+        amount: transactionData.amount,
+        status: 'confirmed', // Assuming confirmed for assigned bookings
+        scheduledDate: transactionData.slotDatetime,
+        assignedDoctorId: doctorId,
+        createdAt: transactionData.createdAt,
+        petDetails: transactionData.petDetails, // Directly use petDetails from transaction
+      };
       
-      // Get user's dogs for pet details
-      const dogsRef = collection(db, 'users', userId, 'dogs');
-      const dogsSnapshot = await getDocs(dogsRef);
-      const userDogs = dogsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      
-      transactionsSnapshot.docs.forEach(transactionDoc => {
-        const transactionData = transactionDoc.data();
-        
-        // Find matching pet details
-        const matchingDog = userDogs.find(dog => dog.name === transactionData.dogName);
-        
-        const booking: DoctorBooking = {
-          id: transactionDoc.id,
-          userId,
-          customerName: transactionData.customer?.name || 'Unknown Customer',
-          customerPhone: transactionData.customer?.phone || '',
-          customerAddress: transactionData.customer ? 
-            `${transactionData.customer.address}, ${transactionData.customer.city} - ${transactionData.customer.postalCode}` : 
-            undefined,
-          petName: transactionData.dogName,
-          service: transactionData.service,
-          amount: transactionData.amount,
-          status: 'confirmed',
-          scheduledDate: transactionData.slotDatetime,
-          assignedDoctorId: doctorId,
-          createdAt: transactionData.createdAt,
-        };
-        
-        allBookings.push(booking);
-      });
-    }
+      allBookings.push(booking);
+    });
     
     // Sort by scheduled date
     return allBookings.sort((a, b) => {
@@ -79,7 +71,7 @@ const fetchDoctorBookings = async (doctorId: string): Promise<DoctorBooking[]> =
     
   } catch (error) {
     console.error('Error fetching doctor bookings:', error);
-    return [];
+    throw error; // Re-throw to be caught by react-query
   }
 };
 
