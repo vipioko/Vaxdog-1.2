@@ -15,6 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { PlusCircle, MoreHorizontal, Edit, Trash2, Image as ImageIcon, Scissors, IndianRupee, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useIsMobile } from '@/hooks/use-mobile';
 const GroomingServiceManagement = () => {
   const { services, isLoading, addService, updateService, deleteService, isAddingService, isUpdatingService, isDeletingService } = useGroomingServices();
   
@@ -35,6 +36,8 @@ const GroomingServiceManagement = () => {
   const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
   const [imagePreview, setImagePreview] = useState<string>('');
   const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
+
+  const isMobile = useIsMobile();
 
   const resetForm = () => {
     setFormData({
@@ -296,7 +299,72 @@ const GroomingServiceManagement = () => {
         </CardHeader>
         
         <CardContent>
-          {services.length > 0 ? (
+          {services.length === 0 ? (
+            <div className="text-center py-12">
+              <Scissors className="h-16 w-16 text-slate-600 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-white mb-2">No grooming services yet</h3>
+              <p className="text-slate-400 text-sm mb-4">Add your first grooming service to get started</p>
+              <Button onClick={() => setIsAddDialogOpen(true)} className="bg-purple-500 hover:bg-purple-600">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Service
+              </Button>
+            </div>
+          ) : isMobile ? (
+            <div className="space-y-4">
+              {services.map((service) => (
+                <Card key={service.id} className="bg-slate-700/30 border-slate-600">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      {service.imageUrl ? (
+                        <img src={service.imageUrl} alt={service.name} className="w-20 h-20 object-cover rounded-lg flex-shrink-0" />
+                      ) : (
+                        <div className="w-20 h-20 bg-slate-600 rounded-lg flex-shrink-0 flex items-center justify-center">
+                          <ImageIcon className="h-10 w-10 text-slate-400" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-white text-lg truncate">{service.name}</h4>
+                        <p className="text-sm text-slate-400 line-clamp-2">{service.description}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <div className="flex items-center text-white text-sm">
+                            <IndianRupee className="h-4 w-4 mr-1" />{service.price.toFixed(2)}
+                          </div>
+                          <div className="flex items-center text-slate-400 text-sm">
+                            <Clock className="h-4 w-4 mr-1" />{service.duration} min
+                          </div>
+                        </div>
+                      </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-white">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-slate-800 border-slate-700">
+                        <DropdownMenuItem onClick={() => openEditDialog(service)} className="text-white hover:bg-slate-700">
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-red-400 hover:bg-red-500/10"
+                          onClick={() => openDeleteDialog(service)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  <div className="mt-3 flex justify-end">
+                    <Badge variant={service.isActive ? 'default' : 'secondary'} className={service.isActive ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}>
+                      {service.isActive ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            </div>
+          ) : (
             <Table>
               <TableHeader>
                 <TableRow className="border-slate-700">
@@ -355,8 +423,8 @@ const GroomingServiceManagement = () => {
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            className="text-red-400 hover:bg-red-500/10" 
+                          <DropdownMenuItem
+                            className="text-red-400 hover:bg-red-500/10"
                             onClick={() => openDeleteDialog(service)}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
@@ -369,16 +437,6 @@ const GroomingServiceManagement = () => {
                 ))}
               </TableBody>
             </Table>
-          ) : (
-            <div className="text-center py-12">
-              <Scissors className="h-16 w-16 text-slate-600 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-white mb-2">No grooming services yet</h3>
-              <p className="text-slate-400 text-sm mb-4">Add your first grooming service to get started</p>
-              <Button onClick={() => setIsAddDialogOpen(true)} className="bg-purple-500 hover:bg-purple-600">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Add Service
-              </Button>
-            </div>
           )}
         </CardContent>
       </Card>

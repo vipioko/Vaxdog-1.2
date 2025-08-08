@@ -15,6 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { PlusCircle, MoreHorizontal, Edit, Trash2, Image as ImageIcon, Home, IndianRupee, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useIsMobile } from '@/hooks/use-mobile';
 const PetHostelManagement = () => {
   const { services, isLoading, addService, updateService, deleteService, isAddingService, isUpdatingService, isDeletingService } = usePetHostelServices();
   
@@ -37,6 +38,8 @@ const PetHostelManagement = () => {
   const [imagePreview, setImagePreview] = useState<string>('');
   const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
   const [amenityInput, setAmenityInput] = useState('');
+
+  const isMobile = useIsMobile();
 
   const resetForm = () => {
     setFormData({
@@ -344,7 +347,86 @@ const PetHostelManagement = () => {
         </CardHeader>
         
         <CardContent>
-          {services.length > 0 ? (
+          {services.length === 0 ? (
+            <div className="text-center py-12">
+              <Home className="h-16 w-16 text-slate-600 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-white mb-2">No pet hostel services yet</h3>
+              <p className="text-slate-400 text-sm mb-4">Add your first pet hostel service to get started</p>
+              <Button onClick={() => setIsAddDialogOpen(true)} className="bg-blue-500 hover:bg-blue-600">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Service
+              </Button>
+            </div>
+          ) : isMobile ? (
+            <div className="space-y-4">
+              {services.map((service) => (
+                <Card key={service.id} className="bg-slate-700/30 border-slate-600">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      {service.imageUrl ? (
+                        <img src={service.imageUrl} alt={service.name} className="w-20 h-20 object-cover rounded-lg flex-shrink-0" />
+                      ) : (
+                        <div className="w-20 h-20 bg-slate-600 rounded-lg flex-shrink-0 flex items-center justify-center">
+                          <ImageIcon className="h-10 w-10 text-slate-400" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-white text-lg truncate">{service.name}</h4>
+                        <p className="text-sm text-slate-400 line-clamp-2">{service.description}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <div className="flex items-center text-white text-sm">
+                            <IndianRupee className="h-4 w-4 mr-1" />{service.dailyRate.toFixed(2)}/day
+                          </div>
+                          <div className="flex items-center text-slate-400 text-sm">
+                            <Users className="h-4 w-4 mr-1" />Capacity: {service.capacity}
+                          </div>
+                        </div>
+                        {service.amenities && service.amenities.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {service.amenities.slice(0, 2).map((amenity, idx) => (
+                              <Badge key={idx} variant="secondary" className="bg-blue-500/20 text-blue-300 border-blue-500/30 text-xs">
+                                {amenity}
+                              </Badge>
+                            ))}
+                            {service.amenities.length > 2 && (
+                              <Badge variant="secondary" className="bg-blue-500/20 text-blue-300 border-blue-500/30 text-xs">
+                                +{service.amenities.length - 2} more
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-white">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-slate-800 border-slate-700">
+                          <DropdownMenuItem onClick={() => openEditDialog(service)} className="text-white hover:bg-slate-700">
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-red-400 hover:bg-red-500/10"
+                            onClick={() => openDeleteDialog(service)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    <div className="mt-3 flex justify-end">
+                      <Badge variant={service.isActive ? 'default' : 'secondary'} className={service.isActive ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}>
+                        {service.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
             <Table>
               <TableHeader>
                 <TableRow className="border-slate-700">
@@ -403,8 +485,8 @@ const PetHostelManagement = () => {
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            className="text-red-400 hover:bg-red-500/10" 
+                          <DropdownMenuItem
+                            className="text-red-400 hover:bg-red-500/10"
                             onClick={() => openDeleteDialog(service)}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
@@ -417,16 +499,6 @@ const PetHostelManagement = () => {
                 ))}
               </TableBody>
             </Table>
-          ) : (
-            <div className="text-center py-12">
-              <Home className="h-16 w-16 text-slate-600 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-white mb-2">No pet hostel services yet</h3>
-              <p className="text-slate-400 text-sm mb-4">Add your first pet hostel service to get started</p>
-              <Button onClick={() => setIsAddDialogOpen(true)} className="bg-blue-500 hover:bg-blue-600">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Add Service
-              </Button>
-            </div>
           )}
         </CardContent>
       </Card>
