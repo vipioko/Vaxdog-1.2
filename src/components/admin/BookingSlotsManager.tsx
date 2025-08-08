@@ -77,66 +77,87 @@ const BookingSlotsManager: React.FC = () => {
             name="date"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Generate Slots for Date</FormLabel>
+                <FormLabel className="text-white">Generate Slots for Date</FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>
                       <Button
                         variant={"outline"}
-                        className={cn("w-full sm:w-[240px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
+                        className={cn(
+                          "w-full sm:w-[240px] pl-3 text-left font-normal bg-slate-700 border-slate-600 text-white hover:bg-slate-600",
+                          !field.value && "text-slate-400"
+                        )}
                       >
                         {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                       </Button>
                     </FormControl>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
+                  <PopoverContent className="w-auto p-0 bg-slate-800 border-slate-700" align="start">
                     <Calendar
                       mode="single"
                       selected={field.value}
                       onSelect={field.onChange}
                       disabled={(date) => date < startOfToday()}
                       initialFocus
+                      className="bg-slate-800 text-white"
                     />
                   </PopoverContent>
                 </Popover>
-                <FormMessage />
+                <FormMessage className="text-red-400" />
               </FormItem>
             )}
           />
-          <Button type="submit" disabled={form.formState.isSubmitting}>
+          <Button 
+            type="submit" 
+            disabled={form.formState.isSubmitting}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
             {form.formState.isSubmitting ? 'Generating...' : 'Generate Slots'}
           </Button>
         </form>
       </Form>
-      <div className="rounded-md border">
+      
+      <div className="rounded-md border border-slate-700 bg-slate-800/50">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Date & Time</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+            <TableRow className="border-slate-700 hover:bg-slate-700/50">
+              <TableHead className="text-slate-300 font-medium">Date & Time</TableHead>
+              <TableHead className="text-slate-300 font-medium">Status</TableHead>
+              <TableHead className="text-right text-slate-300 font-medium">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={3}>
-                  <RemindersSkeleton />
+                <TableCell colSpan={3} className="p-0">
+                  <div className="p-4">
+                    <RemindersSkeleton />
+                  </div>
                 </TableCell>
               </TableRow>
             ) : error ? (
               <TableRow>
-                <TableCell colSpan={3} className="h-24 text-center text-destructive">
+                <TableCell colSpan={3} className="h-24 text-center text-red-400">
                   Failed to load slots.
                 </TableCell>
               </TableRow>
             ) : slots && slots.length > 0 ? (
               slots.map(slot => (
-                <TableRow key={slot.id} className={cn(slot.isBooked && "bg-muted/50")}>
-                  <TableCell className="font-medium">{format(slot.datetime.toDate(), 'PPP p')}</TableCell>
+                <TableRow key={slot.id} className={cn(
+                  "border-slate-700 hover:bg-slate-700/30 transition-colors",
+                  slot.isBooked && "bg-slate-700/20"
+                )}>
+                  <TableCell className="font-medium text-white">
+                    {format(slot.datetime.toDate(), 'PPP p')}
+                  </TableCell>
                   <TableCell>
-                    <span className={cn("px-2 py-1 rounded-full text-xs", slot.isBooked ? "bg-red-200 text-red-800" : "bg-green-200 text-green-800")}>
+                    <span className={cn(
+                      "px-3 py-1 rounded-full text-xs font-medium",
+                      slot.isBooked 
+                        ? "bg-red-500/20 text-red-300 border border-red-500/30" 
+                        : "bg-green-500/20 text-green-300 border border-green-500/30"
+                    )}>
                       {slot.isBooked ? 'Booked' : 'Available'}
                     </span>
                   </TableCell>
@@ -146,6 +167,7 @@ const BookingSlotsManager: React.FC = () => {
                       size="icon"
                       onClick={() => handleDeleteSlot(slot)}
                       disabled={slot.isBooked}
+                      className="h-8 w-8 text-slate-400 hover:text-red-400 hover:bg-red-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
                       aria-label="Delete slot"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -155,7 +177,9 @@ const BookingSlotsManager: React.FC = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={3} className="h-24 text-center">No slots found.</TableCell>
+                <TableCell colSpan={3} className="h-24 text-center text-slate-400">
+                  No slots found. Generate some slots to get started.
+                </TableCell>
               </TableRow>
             )}
           </TableBody>
