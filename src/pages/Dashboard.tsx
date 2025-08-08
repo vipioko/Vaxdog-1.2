@@ -10,6 +10,7 @@ import { useDogs } from '@/hooks/useDogs';
 import { useReminders } from '@/hooks/useReminders';
 import RemindersSkeleton from '@/components/reminders/RemindersSkeleton';
 import { useTransactions } from '@/hooks/useTransactions'; // FIX: Import useTransactions
+import BookingsList from '@/components/bookings/BookingsList';
 
 const Dashboard = () => {
   const { dogs, isLoadingDogs } = useDogs();
