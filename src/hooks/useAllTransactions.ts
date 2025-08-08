@@ -33,6 +33,8 @@ export interface AdminTransaction {
   reminderId?: string;
   slotId?: string;
   slotDatetime?: Timestamp;
+  assignedDoctorId?: string;
+  assignedAt?: Timestamp;
 }
 
 export const useAllTransactions = () => {

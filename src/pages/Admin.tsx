@@ -6,11 +6,15 @@ import BookingSlotsManager from '@/components/admin/BookingSlotsManager';
 import CategoryManagement from '@/components/admin/CategoryManagement';
 import ShopProductManagement from '@/components/admin/ShopProductManagement';
 import OrderManagement from '@/components/admin/OrderManagement';
+import DoctorManagement from '@/components/admin/DoctorManagement';
+import BookingAssignment from '@/components/admin/BookingAssignment';
 
 const Admin = () => {
   return (
-    <Tabs defaultValue="orders" className="w-full">
-      <TabsList className="grid w-full grid-cols-6">
+    <Tabs defaultValue="doctors" className="w-full">
+      <TabsList className="grid w-full grid-cols-8 text-xs">
+        <TabsTrigger value="doctors">Doctors</TabsTrigger>
+        <TabsTrigger value="assignments">Assignments</TabsTrigger>
         <TabsTrigger value="orders">Orders</TabsTrigger>
         <TabsTrigger value="bookings">Bookings</TabsTrigger>
         <TabsTrigger value="vaccines">Vaccines</TabsTrigger>
@@ -18,6 +22,14 @@ const Admin = () => {
         <TabsTrigger value="products">Shop Products</TabsTrigger>
         <TabsTrigger value="slots">Manage Slots</TabsTrigger>
       </TabsList>
+      
+      <TabsContent value="doctors" className="mt-4">
+        <DoctorManagement />
+      </TabsContent>
+      
+      <TabsContent value="assignments" className="mt-4">
+        <BookingAssignment />
+      </TabsContent>
       
       <TabsContent value="orders" className="mt-4">
         <OrderManagement />

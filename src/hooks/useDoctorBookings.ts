@@ -20,13 +20,68 @@ export interface DoctorBooking {
 }
 
 const fetchDoctorBookings = async (doctorId: string): Promise<DoctorBooking[]> => {
-  // This is a placeholder implementation
-  // In a real scenario, you would query transactions or a separate bookings collection
-  // that has an assignedDoctorId field matching the current doctor's ID
+  // Query all users' transactions to find bookings assigned to this doctor
+  const allBookings: DoctorBooking[] = [];
   
-  // For now, we'll return an empty array since the booking assignment feature
-  // will be implemented in the admin panel
-  console.log('Fetching bookings for doctor:', doctorId);
+  try {
+    // Get all users
+    const usersSnapshot = await getDocs(collection(db, 'users'));
+    
+    for (const userDoc of usersSnapshot.docs) {
+      const userId = userDoc.id;
+      
+      // Get transactions for this user
+      const transactionsRef = collection(db, 'users', userId, 'transactions');
+      const transactionsQuery = query(
+        transactionsRef,
+        where('assignedDoctorId', '==', doctorId),
+        where('status', '==', 'successful')
+      );
+      const transactionsSnapshot = await getDocs(transactionsQuery);
+      
+      // Get user's dogs for pet details
+      const dogsRef = collection(db, 'users', userId, 'dogs');
+      const dogsSnapshot = await getDocs(dogsRef);
+      const userDogs = dogsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      transactionsSnapshot.docs.forEach(transactionDoc => {
+        const transactionData = transactionDoc.data();
+        
+        // Find matching pet details
+        const matchingDog = userDogs.find(dog => dog.name === transactionData.dogName);
+        
+        const booking: DoctorBooking = {
+          id: transactionDoc.id,
+          userId,
+          customerName: transactionData.customer?.name || 'Unknown Customer',
+          customerPhone: transactionData.customer?.phone || '',
+          customerAddress: transactionData.customer ? 
+            `${transactionData.customer.address}, ${transactionData.customer.city} - ${transactionData.customer.postalCode}` : 
+            undefined,
+          petName: transactionData.dogName,
+          service: transactionData.service,
+          amount: transactionData.amount,
+          status: 'confirmed',
+          scheduledDate: transactionData.slotDatetime,
+          assignedDoctorId: doctorId,
+          createdAt: transactionData.createdAt,
+        };
+        
+        allBookings.push(booking);
+      });
+    }
+    
+    // Sort by scheduled date
+    return allBookings.sort((a, b) => {
+      if (!a.scheduledDate || !b.scheduledDate) return 0;
+      return a.scheduledDate.toMillis() - b.scheduledDate.toMillis();
+    });
+    
+  } catch (error) {
+    console.error('Error fetching doctor bookings:', error);
+    return [];
+  }
+};
   
   // TODO: Implement actual query when admin assigns doctors to bookings
   // Example query structure:
