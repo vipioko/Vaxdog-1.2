@@ -1,4 +1,4 @@
-```typescript
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { collection, addDoc, updateDoc, doc, serverTimestamp, query, orderBy, where, getDocs } from 'firebase/firestore';
 import { db } from '@/firebase';
@@ -100,4 +100,3 @@ export const usePetHostelBookings = () => {
     isUpdatingPetHostelBookingStatus: updatePetHostelBookingStatusMutation.isPending,
   };
 };
-```
