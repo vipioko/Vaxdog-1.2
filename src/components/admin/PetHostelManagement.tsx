@@ -326,7 +326,7 @@ const PetHostelManagement = () => {
     <>
       <Card className="bg-slate-800/50 border-slate-700">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center text-white">
+          <CardTitle className="flex items-center text-lg sm:text-xl font-bold text-white flex-1 truncate">
             <Home className="h-5 w-5 mr-2 text-blue-400" />
             Pet Hostel Management
           </CardTitle>
@@ -367,7 +367,7 @@ const PetHostelManagement = () => {
                         <img src={service.imageUrl} alt={service.name} className="w-20 h-20 object-cover rounded-lg flex-shrink-0" />
                       ) : (
                         <div className="w-20 h-20 bg-slate-600 rounded-lg flex-shrink-0 flex items-center justify-center">
-                          <ImageIcon className="h-10 w-10 text-slate-400" />
+                          <ImageIcon className="h-10 w-10 text-slate-400" /> {/* FIX: Ensure image icon is visible */}
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
