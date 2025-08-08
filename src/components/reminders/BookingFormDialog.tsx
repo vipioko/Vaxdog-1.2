@@ -61,16 +61,11 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
   const queryClient = useQueryClient();
   const { data: availableSlots, isLoading: isLoadingSlots } = useAvailableSlots({ enabled: open });
   
-  // State to trigger Razorpay payment after dialog closes
   const [triggerRazorpay, setTriggerRazorpay] = useState(false);
 
-  // Get the pet type from the reminder's dog data
   const { dogs } = useDogs();
   const currentDog = dogs.find(dog => dog.name === reminder.dog);
   const petType = currentDog?.petType || 'Dog';
-  
-  console.log('Current dog:', currentDog);
-  console.log('Pet type for products:', petType);
   
   const { data: products, isLoading: isLoadingProducts } = useProducts(petType);
 
@@ -94,12 +89,9 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
     serviceCharge: p.serviceCharge,
   })) ?? [];
 
-  console.log('Vaccine options:', vaccineOptions);
-
   const selectedVaccineValues = form.watch('vaccines') || [];
   const selectedVaccines = vaccineOptions.filter(v => selectedVaccineValues.includes(v.value));
   
-  // Updated cost calculation
   const vaccineTotal = selectedVaccines.reduce((sum, vaccine) => sum + vaccine.price, 0);
   const serviceChargeTotal = selectedVaccines.reduce((sum, vaccine) => sum + (vaccine.serviceCharge || 0), 0);
   const totalAmount = vaccineTotal + serviceChargeTotal;
@@ -110,11 +102,10 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
       return;
     }
     if (step === 2) {
-      const { name, phone, address, city, postalCode } = form.getValues();
-      if (!name || !phone || !address || !city || !postalCode) {
-        toast.error('Please fill in all contact details');
-        return;
-      }
+      form.trigger(['name', 'phone', 'address', 'city', 'postalCode']).then(isValid => {
+        if(isValid) setStep(s => s + 1);
+      });
+      return;
     }
     if (step === 3 && selectedVaccines.length === 0) {
       toast.error('Please select at least one vaccine');
@@ -124,8 +115,6 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
   };
 
   const handlePayment = async (values: z.infer<typeof formSchema>) => {
-    console.log('Starting payment with values:', values);
-    
     if (!isRazorpayLoaded) {
       toast.error('Payment gateway is not ready. Please try again in a moment.');
       return;
@@ -147,12 +136,10 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
       return;
     }
 
-    // Close the booking dialog and trigger Razorpay
     setOpen(false);
     setTriggerRazorpay(true);
   };
 
-  // Effect to open Razorpay when triggerRazorpay is true and dialog is closed
   useEffect(() => {
     if (triggerRazorpay && !open) {
       const values = form.getValues();
@@ -187,6 +174,7 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
               reminderId: reminder.id,
               slotId: selectedSlot!.id,
               slotDatetime: selectedSlot!.datetime,
+              userId: user!.uid, // Good practice: store userId for easier queries
             });
 
             const slotDocRef = doc(db, 'bookingSlots', selectedSlot!.id);
@@ -205,12 +193,23 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
             toast.success('Payment Successful!', {
               description: `Booking confirmed for ${format(selectedSlot!.datetime.toDate(), 'PPP p')}.`,
             });
-            setOpen(false);
             form.reset();
             setStep(1);
-          } catch (error) {
+          } catch (error: any) {
               console.error("Error processing booking:", error);
-              toast.error('Payment successful, but failed to save transaction details.');
+              
+              // --- UPDATED ERROR HANDLING ---
+              if (error.code === 'permission-denied') {
+                  toast.error('Booking Failed!', {
+                      description: 'Sorry, this time slot was just taken by someone else. Please select a new slot.',
+                  });
+                  queryClient.invalidateQueries({ queryKey: ['availableSlots'] });
+                  setOpen(true);
+              } else {
+                  toast.error('Payment successful, but failed to save transaction details.', {
+                    description: 'Please contact support with your payment ID for assistance.',
+                  });
+              }
           }
         },
         prefill: {
@@ -227,7 +226,6 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
         modal: {
           ondismiss: function() {
             console.log('Payment modal dismissed');
-            // Reopen the booking dialog if payment is dismissed
             setTimeout(() => setOpen(true), 100);
           },
           confirm_close: true,
@@ -236,95 +234,26 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
           backdrop_close: false,
           handleback: true,
         },
-        config: {
-          display: {
-            blocks: {
-              utib: {
-                name: 'Pay using Axis Bank',
-                instruments: [
-                  {
-                    method: 'card'
-                  }, 
-                  {
-                    method: 'netbanking'
-                  }
-                ]
-              }
-            },
-            sequence: ['block.utib'],
-            preferences: {
-              show_default_blocks: true,
-            }
-          }
-        }
       };
 
-      console.log('Opening Razorpay with options:', options);
-      
-      // Add styles to fix input field issues
-      const style = document.createElement('style');
-      style.innerHTML = `
-        .razorpay-container {
-          z-index: 999999 !important;
-          position: fixed !important;
-        }
-        .razorpay-checkout-frame {
-          z-index: 999999 !important;
-          position: fixed !important;
-        }
-        .razorpay-backdrop {
-          z-index: 999998 !important;
-          position: fixed !important;
-        }
-        input[data-razorpay] {
-          pointer-events: auto !important;
-          z-index: 1000000 !important;
-          position: relative !important;
-        }
-        .razorpay-payment-form input {
-          pointer-events: auto !important;
-          user-select: auto !important;
-          touch-action: manipulation !important;
-        }
-      `;
-      document.head.appendChild(style);
-      
-      // @ts-ignore
-      const rzp = new window.Razorpay(options);
+      const rzp = new (window as any).Razorpay(options);
       
       rzp.on('payment.failed', function (response: any) {
         console.error('Payment failed:', response);
         toast.error('Payment Failed', {
           description: response.error.description,
         });
-        // Reopen the booking dialog if payment fails
         setTimeout(() => setOpen(true), 100);
-        // Remove the style
-        if (document.head.contains(style)) {
-          document.head.removeChild(style);
-        }
       });
       
       try {
         rzp.open();
-        
-        // Clean up styles after payment modal closes
-        setTimeout(() => {
-          if (document.head.contains(style)) {
-            document.head.removeChild(style);
-          }
-        }, 1000);
-        
       } catch (error) {
         console.error('Error opening Razorpay:', error);
         toast.error('Failed to open payment gateway. Please try again.');
         setOpen(true);
-        // Remove the style on error
-        if (document.head.contains(style)) {
-          document.head.removeChild(style);
-        }
       }
-      setTriggerRazorpay(false); // Reset the trigger
+      setTriggerRazorpay(false);
     }
   }, [triggerRazorpay, open, form, availableSlots, selectedVaccines, totalAmount, reminder.dog, reminder.id, user, queryClient]);
 
@@ -413,7 +342,7 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
                    disabled={!isRazorpayLoaded || form.formState.isSubmitting || isLoadingSlots || isLoadingProducts || !selectedSlot || selectedVaccines.length === 0} 
                    className="w-full sm:w-auto bg-purple-500 hover:bg-purple-600"
                  >
-                    {form.formState.isSubmitting ? 'Processing...' : `Pay ₹${totalAmount} & Book`}
+                    {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : `Pay ₹${totalAmount} & Book`}
                 </Button>
               )}
             </DialogFooter>
