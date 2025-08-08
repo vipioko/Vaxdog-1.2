@@ -78,12 +78,28 @@ service cloud.firestore {
     
     // This rule allows admins/doctors to perform a collection group query across all transactions.
     match /{path=**}/transactions/{transactionId} {
-      // Combined read permissions for clarity
       allow read: if isAdmin() || (isDoctor() && resource.data.assignedDoctorId == request.auth.uid);
-      // NOTE: An 'allow create' rule here is redundant and has been removed.
-      // The `match /users/{userId}` rule above correctly and more securely handles create permission.
+      // Allow a user to create a transaction in their own user's subcollection
+      allow create: if request.auth != null && request.auth.uid == request.path[1];
+      // Allow doctor to update status of assigned transaction
+      allow update: if isDoctor() && resource.data.assignedDoctorId == request.auth.uid &&
+        request.resource.data.keys().hasOnly(['status', 'updatedAt']) && // Only allow status and updatedAt update
+        request.resource.data.status == 'completed'; // Only allow setting to completed
     }
     
+    // Rules for user-specific reminders
+    match /users/{userId}/reminders/{reminderId} {
+      // User can read/write their own reminders
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Admins can read/write any reminder
+      allow read, write: if isAdmin();
+
+      // Doctors can mark a reminder as completed (security compromise)
+      allow update: if isDoctor() &&
+        request.resource.data.keys().hasOnly(['status', 'completedDate']) &&
+        request.resource.data.status == 'completed';
+    }
+
     // Allow admins to read all dogs data for transaction details
     match /{path=**}/dogs/{dogId} {
       allow read: if isAdmin();

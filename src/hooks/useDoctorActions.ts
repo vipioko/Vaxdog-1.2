@@ -1,13 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/firebase';
-import { doc, updateDoc, writeBatch } from 'firebase/firestore';
+import { doc, writeBatch } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { useAuth } from './AuthProvider'; // Correct path to AuthProvider
+import { useAuth } from '@/providers/AuthProvider';
 
 export const useDoctorActions = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuth(); // Get current doctor's UID
+  const { user } = useAuth();
 
   const markBookingAsCompleteMutation = useMutation({
     mutationFn: async ({ transactionId, petOwnerUserId, reminderId }: { transactionId: string; petOwnerUserId: string; reminderId: string }) => {
@@ -19,7 +19,7 @@ export const useDoctorActions = () => {
       const transactionRef = doc(db, 'users', petOwnerUserId, 'transactions', transactionId);
       batch.update(transactionRef, {
         status: 'completed',
-        updatedAt: new Date(), // Add an updatedAt timestamp
+        updatedAt: new Date(),
       });
 
       // 2. Mark the corresponding reminder as complete
@@ -31,13 +31,13 @@ export const useDoctorActions = () => {
 
       await batch.commit();
     },
-    onSuccess: (_, { petOwnerUserId, reminderId }) => {
+    onSuccess: (_, { petOwnerUserId }) => {
       toast.success('Booking marked as completed!');
       // Invalidate relevant queries to refetch data
-      queryClient.invalidateQueries({ queryKey: ['doctorBookings', user?.uid] }); // Doctor's own bookings
-      queryClient.invalidateQueries({ queryKey: ['allTransactions'] }); // Admin panel
-      queryClient.invalidateQueries({ queryKey: ['transactions', petOwnerUserId] }); // User's transactions
-      queryClient.invalidateQueries({ queryKey: ['reminders', petOwnerUserId] }); // User's reminders
+      queryClient.invalidateQueries({ queryKey: ['doctorBookings', user?.uid] });
+      queryClient.invalidateQueries({ queryKey: ['allTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions', petOwnerUserId] });
+      queryClient.invalidateQueries({ queryKey: ['reminders', petOwnerUserId] });
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to mark booking as complete.');

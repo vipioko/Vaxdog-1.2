@@ -18,9 +18,12 @@ import {
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useDoctorBookings } from '@/hooks/useDoctorBookings';
+import { useDoctorActions } from '@/hooks/useDoctorActions';
+import { toast } from 'sonner';
 
 const DoctorBookings = () => {
   const { bookings, isLoading } = useDoctorBookings();
+  const { markBookingAsComplete, isMarkingComplete } = useDoctorActions();
   const [searchQuery, setSearchQuery] = useState('');
 
   const getStatusColor = (status: string) => {
@@ -54,6 +57,14 @@ const DoctorBookings = () => {
     booking.service?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     booking.petName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleMarkAsCompleted = (bookingId: string, petOwnerUserId: string, reminderId?: string) => {
+    if (!reminderId) {
+      toast.error("Cannot mark as complete: Reminder ID is missing.");
+      return;
+    }
+    markBookingAsComplete({ transactionId: bookingId, petOwnerUserId, reminderId });
+  };
 
   if (isLoading) {
     return (
@@ -375,8 +386,10 @@ const DoctorBookings = () => {
                         className="bg-green-600 hover:bg-green-700"
                         onClick={() => handleMarkAsCompleted(booking.id, booking.userId, booking.reminderId)}
                         disabled={isMarkingComplete}
+                        onClick={() => handleMarkAsCompleted(booking.id, booking.userId, booking.reminderId)}
+                        disabled={isMarkingComplete}
                       >
-                        Mark as Completed
+                        {isMarkingComplete ? 'Marking...' : 'Mark as Completed'}
                       </Button>
                       <Button size="sm" variant="outline" className="bg-slate-700 border-slate-600 text-white hover:bg-slate-600">
                         Contact Customer
@@ -392,8 +405,5 @@ const DoctorBookings = () => {
     </Card>
   );
 };
-
-export default DoctorBookings;
-
 
 export default DoctorBookings;
