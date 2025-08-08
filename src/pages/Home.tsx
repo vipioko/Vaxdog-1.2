@@ -1,3 +1,4 @@
+// src/pages/Home.tsx
 import React, { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGroomingServices } from '@/hooks/useGroomingServices';
 import { usePetHostelServices } from '@/hooks/usePetHostelServices';
 import NotificationBell from '@/components/NotificationBell';
+import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
 
 // --- Helper Functions ---
 
@@ -49,8 +51,9 @@ const getHealthStatus = (reminders: any[], transactions: any[]) => {
   
   reminders.forEach(reminder => {
     if (reminder.status === 'upcoming') {
-      const isBooked = transactions?.some(tx => tx.reminderId === reminder.id && tx.status === 'successful');
-      if (isBooked) return;
+      // FIX: Check if the reminder has a successful vaccination booking
+      const isVaccinationBooked = transactions?.some(tx => tx.type === 'vaccination' && tx.reminderId === reminder.id && tx.status === 'successful');
+      if (isVaccinationBooked) return;
       
       const daysUntilDue = differenceInDays(new Date(reminder.due), today);
       if (daysUntilDue < 0) overdueCount++;
@@ -63,7 +66,8 @@ const getHealthStatus = (reminders: any[], transactions: any[]) => {
 
 const getReminderVisuals = (reminder: any, transactions: any[]) => {
   if (!reminder) return null;
-  const isBooked = transactions?.some(tx => tx.reminderId === reminder.id && tx.status === 'successful');
+  // FIX: Check if the reminder has a successful vaccination booking
+  const isBooked = transactions?.some(tx => tx.type === 'vaccination' && tx.reminderId === reminder.id && tx.status === 'successful');
   if (isBooked) return { statusText: "Booked & Confirmed", actionText: "View Booking", colorClass: "text-green-400", buttonVariant: "outline" as const };
   const daysUntilDue = differenceInDays(new Date(reminder.due), startOfToday());
   if (daysUntilDue < 0) return { statusText: `${Math.abs(daysUntilDue)} day${Math.abs(daysUntilDue) > 1 ? 's' : ''} Overdue`, actionText: "Book Now (Urgent)", colorClass: "text-red-400", buttonVariant: "default" as const };
@@ -123,6 +127,7 @@ const Home = () => {
   
   const { nextReminder, recentTransaction, healthStatus, stats } = useMemo(() => {
     const upcoming = reminders.filter(r => r.status === 'upcoming').sort((a, b) => new Date(a.due).getTime() - new Date(b.due).getTime());
+    // FIX: Get the most recent transaction of any type
     const recentTx = transactions?.sort((a,b) => b.createdAt.toMillis() - a.createdAt.toMillis())[0];
     const status = getHealthStatus(reminders, transactions);
     const petStats = { totalPets: dogs.length, completedVaccinations: reminders.filter(r => r.status === 'completed').length };
@@ -211,13 +216,20 @@ const Home = () => {
                 <h2 className="text-lg font-semibold text-white mb-4">Recent Booking</h2>
                 <GlassCard>
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="p-3 rounded-full bg-green-500/10"><HomeIcon className="h-5 w-5 text-green-400"/></div>
+                        {/* FIX: Display icon based on booking type */}
+                        <div className="p-3 rounded-full bg-green-500/10">
+                          {recentTransaction.type === 'grooming' && <Scissors className="h-5 w-5 text-purple-400"/>}
+                          {recentTransaction.type === 'petHostel' && <HostelIcon className="h-5 w-5 text-blue-400"/>}
+                          {recentTransaction.type === 'vaccination' && <Stethoscope className="h-5 w-5 text-green-400"/>}
+                        </div>
                         <div className="flex-1">
                             <p className="text-white font-medium">{recentTransaction.service}</p>
+                            {/* FIX: Display pet name if available */}
+                            {recentTransaction.petName && <p className="text-slate-400 text-xs">For {recentTransaction.petName}</p>}
                             <p className="text-slate-400 text-xs">{format(recentTransaction.createdAt.toDate(), 'MMM d, yyyy')}</p>
                         </div>
-                        <Badge className={`text-xs ${recentTransaction.status === 'successful' ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
-                            {recentTransaction.status === 'successful' ? 'Paid' : 'Failed'}
+                        <Badge className={`text-xs ${recentTransaction.status === 'successful' || recentTransaction.status === 'paid' || recentTransaction.status === 'confirmed' ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
+                            {recentTransaction.status === 'successful' || recentTransaction.status === 'paid' || recentTransaction.status === 'confirmed' ? 'Paid' : 'Failed'}
                         </Badge>
                     </div>
                     <div className="border-t border-slate-700/50 pt-3 flex items-center justify-between">
@@ -336,3 +348,4 @@ const Home = () => {
 };
 
 export default Home;
+

@@ -1,3 +1,4 @@
+// src/pages/Bookings.tsx
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,24 +19,27 @@ import {
   XCircle,
   Scissors,
   Home as HostelIcon,
+  Dog as DogIcon, // Import Dog icon
+  Utensils, // Import Utensils icon
 } from 'lucide-react';
-import { useTransactions } from '@/hooks/useTransactions';
-import { useGroomingBookings } from '@/hooks/useGroomingBookings';
-import { usePetHostelBookings } from '@/hooks/usePetHostelBookings';
+import { useTransactions, Transaction } from '@/hooks/useTransactions'; // FIX: Import Transaction interface
 import { format } from 'date-fns';
 import RemindersSkeleton from '@/components/reminders/RemindersSkeleton';
 
 const Bookings = () => {
-  // FIX: Added state for active tab
   const [activeTab, setActiveTab] = useState('home-vaccinations');
   const [searchQuery, setSearchQuery] = useState('');
-  const { transactions, isLoading } = useTransactions();
+  const { transactions, isLoading } = useTransactions(); // FIX: Use unified transactions hook
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'successful':
+      case 'paid':
+      case 'confirmed':
+      case 'completed': // FIX: Add completed status
         return 'bg-green-500/20 text-green-300 border-green-500/30';
       case 'failed':
+      case 'cancelled': // FIX: Add cancelled status
         return 'bg-red-500/20 text-red-300 border-red-500/30';
       case 'pending':
         return 'bg-orange-500/20 text-orange-300 border-orange-500/30';
@@ -47,11 +51,18 @@ const Bookings = () => {
   const getStatusText = (status: string) => {
     switch (status.toLowerCase()) {
       case 'successful':
+      case 'paid':
         return 'Confirmed';
       case 'failed':
         return 'Failed';
       case 'pending':
         return 'Pending';
+      case 'confirmed':
+        return 'Confirmed';
+      case 'completed':
+        return 'Completed';
+      case 'cancelled':
+        return 'Cancelled';
       default:
         return status;
     }
@@ -60,26 +71,36 @@ const Bookings = () => {
   const getStatusIcon = (status: string) => {
     switch (status.toLowerCase()) {
       case 'successful':
+      case 'confirmed':
+      case 'completed':
         return <CheckCircle className="h-4 w-4" />;
       case 'failed':
+      case 'cancelled':
         return <XCircle className="h-4 w-4" />;
       default:
         return <Clock className="h-4 w-4" />;
     }
   };
 
-  // Filter transactions to only show home vaccination bookings
-  const homeBookings = transactions?.filter(tx => 
-    tx.service.toLowerCase().includes('home vaccination') ||
-    tx.service.toLowerCase().includes('vaccination')
-  ) || [];
+  // FIX: Filter transactions by type for each tab
+  const homeVaccinationBookings = transactions?.filter(tx => tx.type === 'vaccination') || [];
+  const groomingBookings = transactions?.filter(tx => tx.type === 'grooming') || [];
+  const petHostelBookings = transactions?.filter(tx => tx.type === 'petHostel') || [];
 
-  const filteredBookings = homeBookings.filter(booking =>
+  const filteredHomeVaccinationBookings = homeVaccinationBookings.filter(booking =>
     booking.service.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (booking.dogName && booking.dogName.toLowerCase().includes(searchQuery.toLowerCase()))
+    (booking.petName && booking.petName.toLowerCase().includes(searchQuery.toLowerCase()))
   );
-  // FIX: Filtered grooming and pet hostel bookings
-  const groomingBookings = []; // Placeholder for now, will be fetched from hook
+
+  const filteredGroomingBookings = groomingBookings.filter(booking =>
+    booking.service.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (booking.petName && booking.petName.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  const filteredPetHostelBookings = petHostelBookings.filter(booking =>
+    booking.service.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (booking.petName && booking.petName.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
   if (isLoading) {
     return (
@@ -97,11 +118,9 @@ const Bookings = () => {
       <div className="px-4 pt-8 pb-6">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-white">Bookings</h1>
-          {/* FIX: Removed placeholder div */}
           <div className="flex items-center gap-2"></div>
         </div>
 
-        {/* FIX: Added Tabs for different booking types */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 bg-slate-700/50 mb-6">
             <TabsTrigger 
@@ -124,8 +143,6 @@ const Bookings = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* Search Bar */}
-          {/* FIX: Moved search bar inside TabsContent for Home Vaccinations */}
           <TabsContent value="home-vaccinations" className="mt-0">
             <div className="relative mb-6">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -138,29 +155,27 @@ const Bookings = () => {
               />
             </div>
 
-            {/* Bookings List */}
             <div className="space-y-4">
-              {filteredBookings.length === 0 ? (
+              {filteredHomeVaccinationBookings.length === 0 ? (
                 <div className="text-center py-12">
                   <Calendar className="h-16 w-16 text-slate-600 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-white mb-2">
-                    {homeBookings.length === 0 ? 'No bookings yet' : 'No bookings found'}
+                    {homeVaccinationBookings.length === 0 ? 'No bookings yet' : 'No bookings found'}
                   </h3>
                   <p className="text-slate-400 text-sm">
-                    {homeBookings.length === 0 
+                    {homeVaccinationBookings.length === 0 
                       ? 'Your home vaccination bookings will appear here' 
                       : 'Try adjusting your search terms'
                     }
                   </p>
                 </div>
               ) : (
-                filteredBookings.map((booking) => {
+                filteredHomeVaccinationBookings.map((booking) => {
                   const bookingId = booking.id.slice(-3).toUpperCase();
                   
                   return (
                     <Card key={booking.id} className="bg-slate-800/50 border-slate-700 overflow-hidden">
                       <CardContent className="p-0">
-                        {/* Service Type Badge */}
                         <div className="p-4 pb-2">
                           <div className="flex justify-center mb-4">
                             <Badge className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white border-0 rounded-full">
@@ -169,43 +184,35 @@ const Bookings = () => {
                             </Badge>
                           </div>
 
-                          {/* Booking ID and Status */}
                           <div className="text-center mb-4">
                             <h2 className="text-2xl font-bold text-white mb-1">#{bookingId}</h2>
                             <p className="text-slate-400 text-sm">
-                              Booking status: <span className={`font-medium ${
-                                booking.status === 'successful' ? 'text-green-400' :
-                                booking.status === 'failed' ? 'text-red-400' : 'text-orange-400'
-                              }`}>
+                              Booking status: <span className={`font-medium ${getStatusColor(booking.status)}`}>
                                 {getStatusText(booking.status)}
                               </span>
                             </p>
                           </div>
                         </div>
 
-                        {/* Booking Details */}
                         <div className="px-4 pb-4 space-y-3">
-                          {/* Service Description */}
                           <div className="text-center mb-4">
                             <p className="text-white font-medium text-sm">{booking.service}</p>
                           </div>
 
-                          {/* Pet Info */}
-                          {booking.dogName && (
+                          {booking.petName && (
                             <div className="flex items-center gap-3">
                               <Avatar className="h-12 w-12">
                                 <AvatarFallback className="bg-purple-500 text-white">
-                                  {booking.dogName.charAt(0).toUpperCase()}
+                                  {booking.petName.charAt(0).toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
                               <div className="flex-1">
-                                <p className="text-white font-medium">{booking.dogName}</p>
+                                <p className="text-white font-medium">{booking.petName}</p>
                                 <p className="text-slate-400 text-sm">Your pet</p>
                               </div>
                             </div>
                           )}
 
-                          {/* Booking Date */}
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-slate-400 flex items-center gap-2">
                               <Clock className="h-4 w-4" />
@@ -216,7 +223,6 @@ const Bookings = () => {
                             </span>
                           </div>
 
-                          {/* Scheduled Time */}
                           {booking.slotDatetime && (
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-slate-400 flex items-center gap-2">
@@ -229,7 +235,6 @@ const Bookings = () => {
                             </div>
                           )}
 
-                          {/* Price */}
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-slate-400 flex items-center gap-2">
                               <IndianRupee className="h-4 w-4" />
@@ -240,7 +245,6 @@ const Bookings = () => {
                             </span>
                           </div>
 
-                          {/* Payment ID */}
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-slate-400">Payment ID</span>
                             <span className="text-white font-mono text-xs">
@@ -248,7 +252,6 @@ const Bookings = () => {
                             </span>
                           </div>
 
-                          {/* Customer Info */}
                           {booking.customer && (
                             <>
                               <div className="flex items-center justify-between text-sm">
@@ -275,7 +278,6 @@ const Bookings = () => {
                             </>
                           )}
 
-                          {/* Vaccines */}
                           {booking.vaccines && booking.vaccines.length > 0 && (
                             <div className="mt-4 p-3 bg-slate-700/30 rounded-lg">
                               <p className="text-slate-400 text-sm mb-2">Vaccines:</p>
@@ -291,7 +293,6 @@ const Bookings = () => {
                           )}
                         </div>
 
-                        {/* Status Badge */}
                         <div className="px-4 pb-4">
                           <div className={`flex items-center justify-center gap-2 p-3 rounded-xl ${getStatusColor(booking.status)}`}>
                             {getStatusIcon(booking.status)}
@@ -311,11 +312,11 @@ const Bookings = () => {
           </TabsContent>
 
           <TabsContent value="grooming" className="mt-0">
-            <GroomingBookingsList />
+            <GroomingBookingsList transactions={filteredGroomingBookings} /> {/* FIX: Pass filtered transactions */}
           </TabsContent>
 
           <TabsContent value="pet-hostel" className="mt-0">
-            <PetHostelBookingsList />
+            <PetHostelBookingsList transactions={filteredPetHostelBookings} /> {/* FIX: Pass filtered transactions */}
           </TabsContent>
         </Tabs>
       </div>
@@ -323,14 +324,13 @@ const Bookings = () => {
   );
 };
 
-// FIX: New component for Grooming Bookings List
-const GroomingBookingsList = () => {
-  const { userGroomingBookings, isLoading } = useGroomingBookings();
+// FIX: New component for Grooming Bookings List - now accepts transactions as prop
+const GroomingBookingsList = ({ transactions }: { transactions: Transaction[] }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredBookings = userGroomingBookings.filter(booking =>
-    booking.serviceName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    booking.petName.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredBookings = transactions.filter(booking =>
+    booking.service.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (booking.petName && booking.petName.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const getStatusColor = (status: string) => {
@@ -353,8 +353,15 @@ const GroomingBookingsList = () => {
     }
   };
 
-  if (isLoading) {
-    return <RemindersSkeleton />;
+  // FIX: Removed isLoading check as data is passed via prop
+  if (transactions.length === 0 && searchQuery === '') { // Only show empty state if no search query
+    return (
+      <div className="text-center py-12">
+        <Scissors className="h-16 w-16 text-slate-600 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-white mb-2">No grooming bookings yet</h3>
+        <p className="text-slate-400 text-sm">Book a grooming service to see it here.</p>
+      </div>
+    );
   }
 
   return (
@@ -372,22 +379,22 @@ const GroomingBookingsList = () => {
       {filteredBookings.length === 0 ? (
         <div className="text-center py-12">
           <Scissors className="h-16 w-16 text-slate-600 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-white mb-2">No grooming bookings yet</h3>
-          <p className="text-slate-400 text-sm">Book a grooming service to see it here.</p>
+          <h3 className="text-lg font-medium text-white mb-2">No grooming bookings found</h3>
+          <p className="text-slate-400 text-sm">Try adjusting your search terms.</p>
         </div>
       ) : (
         filteredBookings.map(booking => (
           <Card key={booking.id} className="bg-slate-800/50 border-slate-700 overflow-hidden">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-white">{booking.serviceName}</h3>
-                <Badge className={getStatusColor(booking.bookingStatus)}>
-                  {getStatusIcon(booking.bookingStatus)}
-                  <span className="ml-1 capitalize">{booking.bookingStatus}</span>
+                <h3 className="font-semibold text-white">{booking.service}</h3> {/* FIX: Use generic service field */}
+                <Badge className={getStatusColor(booking.status)}> {/* FIX: Use generic status field */}
+                  {getStatusIcon(booking.status)}
+                  <span className="ml-1 capitalize">{getStatusText(booking.status)}</span>
                 </Badge>
               </div>
               <div className="space-y-2 text-sm">
-                <p className="text-slate-300">For: {booking.petName} ({booking.petDetails.breed})</p>
+                <p className="text-slate-300">For: {booking.petName} ({booking.petDetails?.breed})</p> {/* FIX: Use petDetails */}
                 <p className="text-slate-300">Date: {booking.preferredDate ? format(new Date(booking.preferredDate), 'PPP') : 'N/A'}</p>
                 <p className="text-slate-300">Time: {booking.preferredTime || 'N/A'}</p>
                 <div className="flex items-center text-white font-bold">
@@ -403,14 +410,13 @@ const GroomingBookingsList = () => {
   );
 };
 
-// FIX: New component for Pet Hostel Bookings List
-const PetHostelBookingsList = () => {
-  const { userPetHostelBookings, isLoading } = usePetHostelBookings();
+// FIX: New component for Pet Hostel Bookings List - now accepts transactions as prop
+const PetHostelBookingsList = ({ transactions }: { transactions: Transaction[] }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredBookings = userPetHostelBookings.filter(booking =>
-    booking.serviceName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    booking.petName.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredBookings = transactions.filter(booking =>
+    booking.service.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (booking.petName && booking.petName.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const getStatusColor = (status: string) => {
@@ -433,8 +439,15 @@ const PetHostelBookingsList = () => {
     }
   };
 
-  if (isLoading) {
-    return <RemindersSkeleton />;
+  // FIX: Removed isLoading check as data is passed via prop
+  if (transactions.length === 0 && searchQuery === '') { // Only show empty state if no search query
+    return (
+      <div className="text-center py-12">
+        <HostelIcon className="h-16 w-16 text-slate-600 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-white mb-2">No pet hostel bookings yet</h3>
+        <p className="text-slate-400 text-sm">Book a pet hostel service to see it here.</p>
+      </div>
+    );
   }
 
   return (
@@ -452,22 +465,22 @@ const PetHostelBookingsList = () => {
       {filteredBookings.length === 0 ? (
         <div className="text-center py-12">
           <HostelIcon className="h-16 w-16 text-slate-600 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-white mb-2">No pet hostel bookings yet</h3>
-          <p className="text-slate-400 text-sm">Book a pet hostel service to see it here.</p>
+          <h3 className="text-lg font-medium text-white mb-2">No pet hostel bookings found</h3>
+          <p className="text-slate-400 text-sm">Try adjusting your search terms.</p>
         </div>
       ) : (
         filteredBookings.map(booking => (
           <Card key={booking.id} className="bg-slate-800/50 border-slate-700 overflow-hidden">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-white">{booking.serviceName}</h3>
-                <Badge className={getStatusColor(booking.bookingStatus)}>
-                  {getStatusIcon(booking.bookingStatus)}
-                  <span className="ml-1 capitalize">{booking.bookingStatus}</span>
+                <h3 className="font-semibold text-white">{booking.service}</h3> {/* FIX: Use generic service field */}
+                <Badge className={getStatusColor(booking.status)}> {/* FIX: Use generic status field */}
+                  {getStatusIcon(booking.status)}
+                  <span className="ml-1 capitalize">{getStatusText(booking.status)}</span>
                 </Badge>
               </div>
               <div className="space-y-2 text-sm">
-                <p className="text-slate-300">For: {booking.petName} ({booking.petDetails.breed})</p>
+                <p className="text-slate-300">For: {booking.petName} ({booking.petDetails?.breed})</p> {/* FIX: Use petDetails */}
                 <p className="text-slate-300">Check-in: {booking.startDate ? format(new Date(booking.startDate), 'PPP') : 'N/A'}</p>
                 <p className="text-slate-300">Check-out: {booking.endDate ? format(new Date(booking.endDate), 'PPP') : 'N/A'}</p>
                 <p className="text-slate-300">Food: {booking.foodPreference || 'N/A'}</p>
@@ -485,3 +498,4 @@ const PetHostelBookingsList = () => {
 };
 
 export default Bookings;
+
