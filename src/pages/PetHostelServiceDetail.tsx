@@ -125,7 +125,7 @@ const PetHostelServiceDetail = () => {
               {allImages.map((_, index) => (
                 <button
                   key={index}
-                  className={`w-2 h-2 rounded-full transition-colors ${
+                  className={\`w-2 h-2 rounded-full transition-colors ${
                     index === currentImageIndex ? 'bg-white' : 'bg-white/50'
                   }`}
                   onClick={() => setCurrentImageIndex(index)}
@@ -142,7 +142,7 @@ const PetHostelServiceDetail = () => {
               {allImages.map((image, index) => (
                 <button
                   key={index}
-                  className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
+                  className={\`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
                     index === currentImageIndex 
                       ? 'border-blue-500' 
                       : 'border-slate-600 hover:border-slate-500'
@@ -151,7 +151,7 @@ const PetHostelServiceDetail = () => {
                 >
                   <img 
                     src={image} 
-                    alt={`${service.name} ${index + 1}`}
+                    alt={\`${service.name} ${index + 1}`}
                     className="w-full h-full object-cover"
                   />
                 </button>
