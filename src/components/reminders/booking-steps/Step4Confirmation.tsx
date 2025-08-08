@@ -63,13 +63,14 @@ const Step4Confirmation: React.FC<Step4ConfirmationProps> = ({ formValues, remin
                 </ul>
               </div>
               <div className="border-t border-slate-600 pt-2 mt-2">
-                <p className="flex justify-between font-bold text-base text-white">
+                {/* Changed from <p> to <div> to fix DOM nesting warning */}
+                <div className="flex justify-between font-bold text-base text-white">
                   <span>Total Fee:</span>
                   <div className="flex items-center">
                     <IndianRupee className="h-4 w-4 mr-1" />
                     {totalFee.toFixed(2)}
                   </div>
-                </p>
+                </div>
               </div>
             </>
           ) : (
