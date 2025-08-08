@@ -18,23 +18,17 @@ const GroomingServiceDetail = () => {
     navigate(-1);
   };
 
+  const allImages = service ? [service.imageUrl, ...(service.galleryImages || [])].filter(Boolean) as string[] : [];
+
   const handlePrevImage = () => {
-    if (service?.galleryImages && service.galleryImages.length > 0) {
-      setCurrentImageIndex((prev) => 
-        prev === 0 ? service.galleryImages!.length - 1 : prev - 1
-      );
-    } else if (service?.imageUrl) {
-      setCurrentImageIndex(0); // Only one image, stay on it
+    if (allImages.length > 1) {
+      setCurrentImageIndex((prev) => (prev === 0 ? allImages.length - 1 : prev - 1));
     }
   };
 
   const handleNextImage = () => {
-    if (service?.galleryImages && service.galleryImages.length > 0) {
-      setCurrentImageIndex((prev) => 
-        prev === service.galleryImages!.length - 1 ? 0 : prev + 1
-      );
-    } else if (service?.imageUrl) {
-      setCurrentImageIndex(0); // Only one image, stay on it
+    if (allImages.length > 1) {
+      setCurrentImageIndex((prev) => (prev === allImages.length - 1 ? 0 : prev + 1));
     }
   };
 
@@ -61,8 +55,6 @@ const GroomingServiceDetail = () => {
       </div>
     );
   }
-
-  const allImages = [service.imageUrl, ...(service.galleryImages || [])].filter(Boolean) as string[];
 
   return (
     <div className="min-h-screen bg-slate-900 text-white pb-20">
@@ -95,7 +87,6 @@ const GroomingServiceDetail = () => {
             </div>
           )}
           
-          {/* Navigation arrows */}
           {allImages.length > 1 && (
             <>
               <Button
@@ -117,13 +108,13 @@ const GroomingServiceDetail = () => {
             </>
           )}
 
-          {/* Image indicators */}
           {allImages.length > 1 && (
             <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
               {allImages.map((_, index) => (
                 <button
                   key={index}
-                  className={\`w-2 h-2 rounded-full transition-colors ${
+                  // --- FIX: Removed invalid backslashes ---
+                  className={`w-2 h-2 rounded-full transition-colors ${
                     index === currentImageIndex ? 'bg-white' : 'bg-white/50'
                   }`}
                   onClick={() => setCurrentImageIndex(index)}
@@ -133,14 +124,14 @@ const GroomingServiceDetail = () => {
           )}
         </div>
 
-        {/* Thumbnail gallery */}
         {allImages.length > 1 && (
           <div className="p-4 bg-slate-800/50">
             <div className="flex gap-2 overflow-x-auto pb-2">
               {allImages.map((image, index) => (
                 <button
                   key={index}
-                  className={\`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
+                  // --- FIX: Removed invalid backslashes ---
+                  className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
                     index === currentImageIndex 
                       ? 'border-purple-500' 
                       : 'border-slate-600 hover:border-slate-500'
@@ -149,7 +140,8 @@ const GroomingServiceDetail = () => {
                 >
                   <img 
                     src={image} 
-                    alt={\`${service.name} ${index + 1}`}
+                    // --- FIX: Removed invalid backslashes ---
+                    alt={`${service.name} ${index + 1}`}
                     className="w-full h-full object-cover"
                   />
                 </button>
@@ -161,7 +153,6 @@ const GroomingServiceDetail = () => {
 
       {/* Service Info */}
       <div className="p-4 space-y-6">
-        {/* Title and Price */}
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-white mb-2 leading-tight">{service.name}</h1>
           <div className="flex items-center justify-between">
@@ -174,16 +165,14 @@ const GroomingServiceDetail = () => {
           </div>
         </div>
 
-        {/* Action Button */}
         <Button 
           className="w-full bg-purple-500 hover:bg-purple-600 text-white h-12 font-semibold"
-          // onClick={handleBookGrooming} // To be implemented in Phase 3
+          // onClick={handleBookGrooming} // To be implemented later
         >
           <Scissors className="h-5 w-5 mr-2" />
           Book Home Grooming
         </Button>
 
-        {/* Service Details */}
         {service.description && (
           <Card className="bg-slate-800/50 border-slate-700">
             <CardContent className="p-4">
@@ -195,7 +184,6 @@ const GroomingServiceDetail = () => {
           </Card>
         )}
 
-        {/* Additional Info */}
         <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="p-4">
             <h3 className="text-lg font-semibold mb-3 text-white">What to Expect</h3>
