@@ -20,6 +20,8 @@ import Layout from "./components/Layout";
 import AdminLayout from "./components/admin/AdminLayout";
 import DoctorLayout from "./components/doctor/DoctorLayout";
 import DogProfile from "./pages/DogProfile";
+import GroomingServiceDetail from "./pages/GroomingServiceDetail";
+import PetHostelServiceDetail from "./pages/PetHostelServiceDetail";
 import Profile from "./pages/Profile";
 import { AuthProvider, useAuth } from "./providers/AuthProvider";
 
@@ -68,6 +70,8 @@ const AppRoutes: React.FC = () => {
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/my-orders" element={<MyOrders />} />
             <Route path="/bookings" element={<Bookings />} />
+            <Route path="/grooming-services/:serviceId" element={<GroomingServiceDetail />} />
+            <Route path="/pet-hostel-services/:serviceId" element={<PetHostelServiceDetail />} />
             <Route path="/profile" element={<Profile reminderDueSoonDays={reminderDueSoonDays} setReminderDueSoonDays={setReminderDueSoonDays} />} />
             <Route path="*" element={<Navigate to="/home" replace />} />
           </Route>

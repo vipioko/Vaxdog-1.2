@@ -15,6 +15,10 @@ import {
   ArrowRight,
   IndianRupee,
   Home as HomeIcon,
+  Scissors,
+  Home as HostelIcon,
+  Clock as ClockIcon,
+  Users as UsersIcon,
 } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { useDogs } from '@/hooks/useDogs';
@@ -22,6 +26,8 @@ import { useReminders } from '@/hooks/useReminders';
 import { useTransactions } from '@/hooks/useTransactions';
 import { format, differenceInDays, startOfToday } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { useGroomingServices } from '@/hooks/useGroomingServices';
+import { usePetHostelServices } from '@/hooks/usePetHostelServices';
 import NotificationBell from '@/components/NotificationBell';
 
 // --- Helper Functions ---
@@ -109,10 +115,12 @@ const Home = () => {
   const { dogs, isLoading: dLoading } = useDogs();
   const { reminders, isLoading: rLoading } = useReminders();
   const { transactions, isLoading: tLoading } = useTransactions();
+  const { services: groomingServices, isLoading: gLoading } = useGroomingServices();
+  const { services: petHostelServices, isLoading: phLoading } = usePetHostelServices();
   const navigate = useNavigate();
 
-  const isLoading = dLoading || rLoading || tLoading;
-
+  const isLoading = dLoading || rLoading || tLoading || gLoading || phLoading;
+  
   const { nextReminder, recentTransaction, healthStatus, stats } = useMemo(() => {
     const upcoming = reminders.filter(r => r.status === 'upcoming').sort((a, b) => new Date(a.due).getTime() - new Date(b.due).getTime());
     const recentTx = transactions?.sort((a,b) => b.createdAt.toMillis() - a.createdAt.toMillis())[0];
@@ -229,6 +237,98 @@ const Home = () => {
                 <p className="text-3xl font-bold text-white">{stats.completedVaccinations}</p>
                 <p className="text-slate-400 text-sm">Completed</p>
             </GlassCard>
+        </section>
+
+        {/* Grooming Services Section */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-white">Grooming Services</h2>
+            <Button variant="ghost" size="sm" className="text-purple-400 hover:text-white" onClick={() => navigate('/grooming-services')}>
+              View All <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+          {gLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Skeleton className="h-40 rounded-lg bg-slate-700" />
+              <Skeleton className="h-40 rounded-lg bg-slate-700" />
+            </div>
+          ) : groomingServices.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {groomingServices.slice(0, 2).map(service => (
+                <GlassCard key={service.id} onClick={() => navigate(`/grooming-services/${service.id}`)}>
+                  <div className="flex items-center gap-4">
+                    {service.imageUrl && (
+                      <img src={service.imageUrl} alt={service.name} className="w-16 h-16 object-cover rounded-lg" />
+                    )}
+                    <div className="flex-1">
+                      <h3 className="text-white font-semibold">{service.name}</h3>
+                      <p className="text-slate-400 text-sm line-clamp-2">{service.description}</p>
+                      <div className="flex items-center justify-between mt-2">
+                        <div className="flex items-center text-white text-sm">
+                          <IndianRupee className="h-4 w-4 mr-1" />{service.price.toFixed(2)}
+                        </div>
+                        <div className="flex items-center text-slate-400 text-xs">
+                          <ClockIcon className="h-3 w-3 mr-1" />{service.duration} min
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </GlassCard>
+              ))}
+            </div>
+          ) : (
+            <GlassCard className="text-center">
+              <Scissors className="h-8 w-8 mx-auto text-purple-400 mb-2"/>
+              <h3 className="text-white font-semibold">No Grooming Services</h3>
+              <p className="text-slate-400 text-sm">Check back later for available services.</p>
+            </GlassCard>
+          )}
+        </section>
+
+        {/* Pet Hostel Services Section */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-white">Pet Hostel Services</h2>
+            <Button variant="ghost" size="sm" className="text-blue-400 hover:text-white" onClick={() => navigate('/pet-hostel-services')}>
+              View All <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+          {phLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Skeleton className="h-40 rounded-lg bg-slate-700" />
+              <Skeleton className="h-40 rounded-lg bg-slate-700" />
+            </div>
+          ) : petHostelServices.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {petHostelServices.slice(0, 2).map(service => (
+                <GlassCard key={service.id} onClick={() => navigate(`/pet-hostel-services/${service.id}`)}>
+                  <div className="flex items-center gap-4">
+                    {service.imageUrl && (
+                      <img src={service.imageUrl} alt={service.name} className="w-16 h-16 object-cover rounded-lg" />
+                    )}
+                    <div className="flex-1">
+                      <h3 className="text-white font-semibold">{service.name}</h3>
+                      <p className="text-slate-400 text-sm line-clamp-2">{service.description}</p>
+                      <div className="flex items-center justify-between mt-2">
+                        <div className="flex items-center text-white text-sm">
+                          <IndianRupee className="h-4 w-4 mr-1" />{service.dailyRate.toFixed(2)}/day
+                        </div>
+                        <div className="flex items-center text-slate-400 text-xs">
+                          <UsersIcon className="h-3 w-3 mr-1" />Capacity: {service.capacity}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </GlassCard>
+              ))}
+            </div>
+          ) : (
+            <GlassCard className="text-center">
+              <HostelIcon className="h-8 w-8 mx-auto text-blue-400 mb-2"/>
+              <h3 className="text-white font-semibold">No Pet Hostel Services</h3>
+              <p className="text-slate-400 text-sm">Check back later for available services.</p>
+            </GlassCard>
+          )}
         </section>
       </main>
     </div>
