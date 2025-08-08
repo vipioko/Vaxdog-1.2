@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -61,6 +61,9 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
   const queryClient = useQueryClient();
   const { data: availableSlots, isLoading: isLoadingSlots } = useAvailableSlots({ enabled: open });
   
+  // State to trigger Razorpay payment after dialog closes
+  const [triggerRazorpay, setTriggerRazorpay] = useState(false);
+
   // Get the pet type from the reminder's dog data
   const { dogs } = useDogs();
   const currentDog = dogs.find(dog => dog.name === reminder.dog);
@@ -144,9 +147,18 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
       return;
     }
 
-    const vaccineNames = selectedVaccines.map(v => v.label).join(', ');
+    // Close the booking dialog and trigger Razorpay
+    setOpen(false);
+    setTriggerRazorpay(true);
+  };
 
-    try {
+  // Effect to open Razorpay when triggerRazorpay is true and dialog is closed
+  useEffect(() => {
+    if (triggerRazorpay && !open) {
+      const values = form.getValues();
+      const selectedSlot = availableSlots?.find(s => s.id === values.slotId);
+      const vaccineNames = selectedVaccines.map(v => v.label).join(', ');
+
       const options = {
         key: RAZORPAY_KEY_ID,
         amount: (totalAmount * 100).toString(),
@@ -159,7 +171,7 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
             console.log('Payment successful, saving transaction:', response);
             const batch = writeBatch(db);
             
-            const transactionCollectionRef = collection(db, 'users', user.uid, 'transactions');
+            const transactionCollectionRef = collection(db, 'users', user!.uid, 'transactions');
             const newTransactionRef = doc(transactionCollectionRef);
 
             batch.set(newTransactionRef, {
@@ -173,14 +185,14 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
               createdAt: serverTimestamp(),
               customer: values,
               reminderId: reminder.id,
-              slotId: selectedSlot.id,
-              slotDatetime: selectedSlot.datetime,
+              slotId: selectedSlot!.id,
+              slotDatetime: selectedSlot!.datetime,
             });
 
-            const slotDocRef = doc(db, 'bookingSlots', selectedSlot.id);
+            const slotDocRef = doc(db, 'bookingSlots', selectedSlot!.id);
             batch.update(slotDocRef, {
               isBooked: true,
-              bookedBy: user.uid,
+              bookedBy: user!.uid,
               transactionId: newTransactionRef.id,
             });
 
@@ -191,7 +203,7 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
             queryClient.invalidateQueries({ queryKey: ['allTransactions'] });
 
             toast.success('Payment Successful!', {
-              description: `Booking confirmed for ${format(selectedSlot.datetime.toDate(), 'PPP p')}.`,
+              description: `Booking confirmed for ${format(selectedSlot!.datetime.toDate(), 'PPP p')}.`,
             });
             setOpen(false);
             form.reset();
@@ -220,7 +232,7 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
           },
           confirm_close: true,
           escape: true,
-          animation: false, // Disable animation to prevent focus issues
+          animation: false,
           backdrop_close: false,
           handleback: true,
         },
@@ -248,9 +260,6 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
       };
 
       console.log('Opening Razorpay with options:', options);
-      
-      // Close the booking dialog temporarily to avoid z-index conflicts
-      setOpen(false);
       
       // Add styles to fix input field issues
       const style = document.createElement('style');
@@ -296,34 +305,29 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
         }
       });
       
-      // Ensure DOM is ready before opening Razorpay
-      setTimeout(() => {
-        try {
-          rzp.open();
-          
-          // Clean up styles after payment modal closes
-          setTimeout(() => {
-            if (document.head.contains(style)) {
-              document.head.removeChild(style);
-            }
-          }, 1000);
-          
-        } catch (error) {
-          console.error('Error opening Razorpay:', error);
-          toast.error('Failed to open payment gateway. Please try again.');
-          setOpen(true);
-          // Remove the style on error
+      try {
+        rzp.open();
+        
+        // Clean up styles after payment modal closes
+        setTimeout(() => {
           if (document.head.contains(style)) {
             document.head.removeChild(style);
           }
+        }, 1000);
+        
+      } catch (error) {
+        console.error('Error opening Razorpay:', error);
+        toast.error('Failed to open payment gateway. Please try again.');
+        setOpen(true);
+        // Remove the style on error
+        if (document.head.contains(style)) {
+          document.head.removeChild(style);
         }
-      }, 100); // Reduced delay
-      
-    } catch (error) {
-      console.error('Error creating payment:', error);
-      toast.error('Failed to initiate payment. Please try again.');
+      }
+      setTriggerRazorpay(false); // Reset the trigger
     }
-  };
+  }, [triggerRazorpay, open, form, availableSlots, selectedVaccines, totalAmount, reminder.dog, reminder.id, user, queryClient]);
+
 
   const handleBack = () => {
     setStep(s => s - 1);
@@ -409,7 +413,6 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
                    disabled={!isRazorpayLoaded || form.formState.isSubmitting || isLoadingSlots || isLoadingProducts || !selectedSlot || selectedVaccines.length === 0} 
                    className="w-full sm:w-auto bg-purple-500 hover:bg-purple-600"
                  >
-                    {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {form.formState.isSubmitting ? 'Processing...' : `Pay ₹${totalAmount} & Book`}
                 </Button>
               )}
