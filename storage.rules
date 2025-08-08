@@ -1,0 +1,48 @@
+rules_version = '2';
+
+// Craft rules based on data in your Firestore database
+// allow write: if firestore.get(
+//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Images uploads to the default bucket
+    match /{allPaths=**} {
+      // Allow read access to all users
+      allow read: if true;
+      
+      // Allow write access to authenticated users for their own folders
+      allow write: if request.auth != null;
+    }
+    
+    // Specific rules for categories folder (admin only)
+    match /categories/{categoryId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null && 
+        exists(/databases/$(database)/documents/admins/$(request.auth.token.phone_number));
+    }
+    
+    // Specific rules for shop products folder (admin only)
+    match /shopProducts/{productId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null && 
+        exists(/databases/$(database)/documents/admins/$(request.auth.token.phone_number));
+    }
+    
+    // Specific rules for shop products gallery folder (admin only)
+    match /shopProducts/gallery/{productId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null && 
+        exists(/databases/$(database)/documents/admins/$(request.auth.token.phone_number));
+    }
+    
+    // User-specific folders (for pet images, etc.)
+    match /users/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // User-specific dog images
+    match /users/{userId}/dogs/{dogId}/{fileName} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
