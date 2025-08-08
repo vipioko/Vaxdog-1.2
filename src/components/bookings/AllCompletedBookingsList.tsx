@@ -1,5 +1,4 @@
-```typescript
-// src/components/bookings/AllCompletedBookingsList.tsx
+
 import React from 'react';
 import { Transaction } from '@/hooks/useTransactions';
 import { Card, CardContent } from '@/components/ui/card';
@@ -165,5 +164,3 @@ const AllCompletedBookingsList: React.FC<AllCompletedBookingsListProps> = ({ tra
     </div>
   );
 };
-
-```
