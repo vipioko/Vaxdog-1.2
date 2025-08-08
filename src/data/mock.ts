@@ -6,6 +6,13 @@ export interface Dog {
   imageUrl?: string;
   petType: string;
   dateOfBirth: string;
+  // New enhanced fields
+  aggressionLevel?: 'Low' | 'Medium' | 'High';
+  weight?: number; // in kg
+  sex?: 'Male' | 'Female';
+  matingInterest?: boolean;
+  pregnancyCount?: number; // Only for female pets
+  pupCount?: number; // Only for female pets
 }
 
 export interface Reminder {

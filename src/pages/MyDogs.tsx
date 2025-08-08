@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DogCard from '@/components/DogCard';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Check, ChevronsUpDown } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from "sonner";
 import { Dog, Reminder } from '@/data/mock';
 import EditDogDialog from '@/components/EditDogDialog';
@@ -28,6 +31,22 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useDogs } from '@/hooks/useDogs';
 import { useReminders } from '@/hooks/useReminders';
 import { useTransactions } from '@/hooks/useTransactions';
+
+// Popular breed lists for autocomplete
+const popularDogBreeds = [
+  "Labrador Retriever", "German Shepherd", "Golden Retriever", "French Bulldog", "Bulldog",
+  "Poodle", "Beagle", "Rottweiler", "German Shorthaired Pointer", "Dachshund",
+  "Pembroke Welsh Corgi", "Australian Shepherd", "Yorkshire Terrier", "Boxer", "Siberian Husky",
+  "Border Collie", "Boston Terrier", "Bernese Mountain Dog", "Pomeranian", "Havanese",
+  "English Springer Spaniel", "Brittany", "Cocker Spaniel", "Border Terrier", "Mastiff"
+];
+
+const popularCatBreeds = [
+  "Ragdoll", "Maine Coon", "Exotic Shorthair", "Persian", "Devon Rex",
+  "Sphynx", "Abyssinian", "Scottish Fold", "British Shorthair", "American Shorthair",
+  "Siamese", "Bengal", "Russian Blue", "Burmese", "Siberian",
+  "Norwegian Forest Cat", "Oriental Shorthair", "Selkirk Rex", "Manx", "Egyptian Mau"
+];
 
 interface MyDogsProps {
   reminderDueSoonDays: number;
@@ -45,10 +64,18 @@ const MyDogs = ({ reminderDueSoonDays }: MyDogsProps) => {
     petType: '', 
     dateOfBirth: '', 
     age: 0, 
-    imageUrl: '' 
+    imageUrl: '',
+    aggressionLevel: undefined,
+    weight: undefined,
+    sex: undefined,
+    matingInterest: false,
+    pregnancyCount: undefined,
+    pupCount: undefined,
   });
   const [newPetFile, setNewPetFile] = useState<File | null>(null);
   const [dogToEdit, setDogToEdit] = useState<Dog | null>(null);
+  const [openBreedCombobox, setOpenBreedCombobox] = useState(false);
+  const [breedSearch, setBreedSearch] = useState('');
 
   const { dogs, isLoadingDogs } = useDogs();
   const { reminders } = useReminders();
@@ -224,7 +251,13 @@ const MyDogs = ({ reminderDueSoonDays }: MyDogsProps) => {
           breed: newPet.breed, 
           age: newPet.age,
           petType: newPet.petType,
-          dateOfBirth: newPet.dateOfBirth
+          dateOfBirth: newPet.dateOfBirth,
+          aggressionLevel: newPet.aggressionLevel,
+          weight: newPet.weight,
+          sex: newPet.sex,
+          matingInterest: newPet.matingInterest,
+          pregnancyCount: newPet.sex === 'Female' ? newPet.pregnancyCount : undefined,
+          pupCount: newPet.sex === 'Female' ? newPet.pupCount : undefined,
         },
         file: newPetFile
       });
@@ -350,7 +383,7 @@ const MyDogs = ({ reminderDueSoonDays }: MyDogsProps) => {
                 Add Pet
               </Button>
             </DialogTrigger>
-            <DialogContent className="w-[95vw] max-w-md mx-auto max-h-[90vh] overflow-y-auto rounded-lg bg-slate-800 border-slate-700">
+            <DialogContent className="w-[95vw] max-w-lg mx-auto max-h-[90vh] overflow-y-auto rounded-lg bg-slate-800 border-slate-700">
               <DialogHeader className="space-y-3 pb-4">
                 <DialogTitle className="text-xl font-bold text-center text-white">Add a new pet</DialogTitle>
                 <DialogDescription className="text-sm text-center text-slate-400">
@@ -389,18 +422,66 @@ const MyDogs = ({ reminderDueSoonDays }: MyDogsProps) => {
                   />
                 </div>
 
-                {/* Breed */}
+                {/* Breed Autocomplete */}
                 <div className="space-y-2">
                   <Label htmlFor="breed" className="text-sm font-medium text-white">
                     Breed *
                   </Label>
-                  <Input
-                    id="breed"
-                    value={newPet.breed}
-                    onChange={(e) => setNewPet({ ...newPet, breed: e.target.value })}
-                    className="w-full h-12 bg-slate-700 border-slate-600 text-white placeholder-slate-400"
-                    placeholder="e.g., Golden Retriever"
-                  />
+                  <Popover open={openBreedCombobox} onOpenChange={setOpenBreedCombobox}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openBreedCombobox}
+                        className="w-full h-12 justify-between bg-slate-700 border-slate-600 text-white hover:bg-slate-600"
+                      >
+                        {newPet.breed || "Select or type breed..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-slate-800 border-slate-700">
+                      <Command>
+                        <CommandInput
+                          placeholder="Search breed..."
+                          className="text-white"
+                          value={breedSearch}
+                          onValueChange={(value) => {
+                            setBreedSearch(value);
+                            setNewPet({ ...newPet, breed: value });
+                          }}
+                        />
+                        <CommandList>
+                          <CommandEmpty className="text-slate-400 p-4">
+                            {breedSearch ? `Use "${breedSearch}" as custom breed` : 'No breed found.'}
+                          </CommandEmpty>
+                          <CommandGroup>
+                            {(newPet.petType === 'dog' ? popularDogBreeds : popularCatBreeds)
+                              .filter(breed => breed.toLowerCase().includes(breedSearch.toLowerCase()))
+                              .map((breed) => (
+                                <CommandItem
+                                  key={breed}
+                                  value={breed}
+                                  onSelect={(currentValue) => {
+                                    setNewPet({ ...newPet, breed: currentValue });
+                                    setOpenBreedCombobox(false);
+                                    setBreedSearch('');
+                                  }}
+                                  className="text-white hover:bg-slate-700 cursor-pointer"
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      newPet.breed === breed ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {breed}
+                                </CommandItem>
+                              ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 {/* Date of Birth */}
@@ -422,6 +503,119 @@ const MyDogs = ({ reminderDueSoonDays }: MyDogsProps) => {
                     </p>
                   )}
                 </div>
+
+                {/* Weight and Sex */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="weight" className="text-sm font-medium text-white">
+                      Weight (kg)
+                    </Label>
+                    <Input
+                      id="weight"
+                      type="number"
+                      value={newPet.weight || ''}
+                      onChange={(e) => setNewPet({ ...newPet, weight: e.target.value ? Number(e.target.value) : undefined })}
+                      className="w-full h-12 bg-slate-700 border-slate-600 text-white placeholder-slate-400"
+                      placeholder="e.g., 15"
+                      min="0"
+                      step="0.1"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="sex" className="text-sm font-medium text-white">
+                      Sex
+                    </Label>
+                    <Select
+                      value={newPet.sex || ''}
+                      onValueChange={(value) => setNewPet({ ...newPet, sex: value as 'Male' | 'Female', pregnancyCount: undefined, pupCount: undefined })}
+                    >
+                      <SelectTrigger className="w-full h-12 bg-slate-700 border-slate-600 text-white">
+                        <SelectValue placeholder="Select sex" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-700 border-slate-600">
+                        <SelectItem value="Male" className="text-white hover:bg-slate-600">♂ Male</SelectItem>
+                        <SelectItem value="Female" className="text-white hover:bg-slate-600">♀ Female</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Aggression Level */}
+                <div className="space-y-2">
+                  <Label htmlFor="aggressionLevel" className="text-sm font-medium text-white">
+                    Aggression Level
+                  </Label>
+                  <Select
+                    value={newPet.aggressionLevel || ''}
+                    onValueChange={(value) => setNewPet({ ...newPet, aggressionLevel: value as 'Low' | 'Medium' | 'High' })}
+                  >
+                    <SelectTrigger className="w-full h-12 bg-slate-700 border-slate-600 text-white">
+                      <SelectValue placeholder="Select aggression level" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-700 border-slate-600">
+                      <SelectItem value="Low" className="text-white hover:bg-slate-600">😊 Low (Friendly)</SelectItem>
+                      <SelectItem value="Medium" className="text-white hover:bg-slate-600">😐 Medium (Cautious)</SelectItem>
+                      <SelectItem value="High" className="text-white hover:bg-slate-600">😠 High (Aggressive)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Mating Service Interest */}
+                <div className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg border border-slate-600">
+                  <div className="space-y-1">
+                    <Label htmlFor="matingInterest" className="text-sm font-medium text-white">
+                      Interested in Mating Service
+                    </Label>
+                    <p className="text-xs text-slate-400">
+                      Would you like to receive mating service recommendations?
+                    </p>
+                  </div>
+                  <Switch
+                    id="matingInterest"
+                    checked={newPet.matingInterest}
+                    onCheckedChange={(checked) => setNewPet({ ...newPet, matingInterest: checked })}
+                  />
+                </div>
+
+                {/* Conditional Pregnancy Fields for Female Pets */}
+                {newPet.sex === 'Female' && (
+                  <div className="space-y-4 p-4 bg-pink-500/10 border border-pink-500/30 rounded-lg">
+                    <h4 className="text-sm font-medium text-pink-300 flex items-center gap-2">
+                      🤱 Pregnancy History
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="pregnancyCount" className="text-sm font-medium text-white">
+                          Times Pregnant
+                        </Label>
+                        <Input
+                          id="pregnancyCount"
+                          type="number"
+                          value={newPet.pregnancyCount || ''}
+                          onChange={(e) => setNewPet({ ...newPet, pregnancyCount: e.target.value ? Number(e.target.value) : undefined })}
+                          className="w-full h-12 bg-slate-700 border-slate-600 text-white placeholder-slate-400"
+                          placeholder="e.g., 1"
+                          min="0"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="pupCount" className="text-sm font-medium text-white">
+                          Total Offspring
+                        </Label>
+                        <Input
+                          id="pupCount"
+                          type="number"
+                          value={newPet.pupCount || ''}
+                          onChange={(e) => setNewPet({ ...newPet, pupCount: e.target.value ? Number(e.target.value) : undefined })}
+                          className="w-full h-12 bg-slate-700 border-slate-600 text-white placeholder-slate-400"
+                          placeholder="e.g., 5"
+                          min="0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Image Upload */}
                 <div className="space-y-2">
