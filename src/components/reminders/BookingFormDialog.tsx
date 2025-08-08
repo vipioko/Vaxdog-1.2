@@ -19,7 +19,8 @@ import useRazorpay from '@/hooks/useRazorpay';
 import { toast } from 'sonner';
 import { useAuth } from '@/providers/AuthProvider';
 import { db } from '@/firebase';
-import { collection, doc, writeBatch, serverTimestamp } from 'firebase/firestore';
+// --- CHANGE 1: Import runTransaction and remove writeBatch ---
+import { collection, doc, serverTimestamp, runTransaction } from 'firebase/firestore'; 
 import { useQueryClient } from '@tanstack/react-query';
 import { useAvailableSlots } from '@/hooks/useAvailableSlots';
 import { useProducts } from '@/hooks/useProducts';
@@ -128,6 +129,8 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
     const selectedSlot = availableSlots?.find(s => s.id === values.slotId);
     if (!selectedSlot) {
         toast.error("Selected slot is not available. Please choose another one.");
+        // Refetch slots in case the list is stale
+        queryClient.invalidateQueries({ queryKey: ['availableSlots'] });
         return;
     }
     
@@ -153,53 +156,60 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
         name: 'VaxDog - Home Vaccination',
         description: `Booking for ${vaccineNames} for ${reminder.dog}`,
         image: '/favicon.ico',
+        // --- CHANGE 2: Replace the entire handler with robust Transaction logic ---
         handler: async function (response: any) {
           try {
-            console.log('Payment successful, saving transaction:', response);
-            const batch = writeBatch(db);
+            console.log('Payment successful, attempting to commit booking transactionally:', response);
             
+            const slotDocRef = doc(db, 'bookingSlots', selectedSlot!.id);
             const transactionCollectionRef = collection(db, 'users', user!.uid, 'transactions');
             const newTransactionRef = doc(transactionCollectionRef);
 
-            // Data for the new transaction
-            const transactionData = {
-              paymentId: response.razorpay_payment_id,
-              amount: totalAmount,
-              currency: 'INR',
-              service: `Home Vaccination for ${vaccineNames} for ${reminder.dog}`,
-              dogName: reminder.dog,
-              vaccines: selectedVaccines.map(v => ({ name: v.label, price: v.price })),
-              status: 'successful',
-              createdAt: serverTimestamp(),
-              customer: values,
-              reminderId: reminder.id,
-              slotId: selectedSlot!.id,
-              slotDatetime: selectedSlot!.datetime,
-              userId: user!.uid,
-            };
+            // runTransaction is an atomic operation. It will fail safely if the data changes while it's running.
+            await runTransaction(db, async (transaction) => {
+              // 1. Read the slot document *inside* the transaction
+              const slotDoc = await transaction.get(slotDocRef);
 
-            batch.set(newTransactionRef, transactionData);
+              // 2. Check if the slot was deleted while the user was paying
+              if (!slotDoc.exists()) {
+                throw new Error("SLOT_DELETED");
+              }
 
-            const slotDocRef = doc(db, 'bookingSlots', selectedSlot!.id);
+              // 3. Check if the slot was booked by someone else while the user was paying
+              if (slotDoc.data().isBooked === true) {
+                throw new Error("SLOT_ALREADY_BOOKED");
+              }
+
+              // 4. If all checks pass, proceed with the writes.
+              
+              // Update the slot to be booked
+              transaction.update(slotDocRef, {
+                isBooked: true,
+                bookedBy: user!.uid,
+                transactionId: newTransactionRef.id,
+              });
+
+              // Create the new transaction record for the user
+              transaction.set(newTransactionRef, {
+                paymentId: response.razorpay_payment_id,
+                amount: totalAmount,
+                currency: 'INR',
+                service: `Home Vaccination for ${vaccineNames} for ${reminder.dog}`,
+                dogName: reminder.dog,
+                vaccines: selectedVaccines.map(v => ({ name: v.label, price: v.price })),
+                status: 'successful',
+                createdAt: serverTimestamp(),
+                customer: values,
+                reminderId: reminder.id,
+                slotId: selectedSlot!.id,
+                slotDatetime: selectedSlot!.datetime,
+                userId: user!.uid,
+              });
+            });
+
+            // If the transaction completes without throwing an error, it was successful.
+            console.log('Transaction successfully committed!');
             
-            // Data for the slot update
-            const slotUpdateData = {
-              isBooked: true,
-              bookedBy: user!.uid,
-              transactionId: newTransactionRef.id,
-            };
-            
-            batch.update(slotDocRef, slotUpdateData);
-
-            // --- START: CRITICAL DIAGNOSTIC LOGGING ---
-            console.log("--- PRE-COMMIT DEBUG ---");
-            console.log("Is user object available?", !!user);
-            console.log("User UID:", user?.uid);
-            console.log("Slot ID being updated:", selectedSlot!.id);
-            console.log("Data for Transaction SET:", JSON.stringify(transactionData, null, 2));
-            console.log("Data for Slot UPDATE:", JSON.stringify(slotUpdateData, null, 2));
-            console.log("--- END DEBUG ---");
-
             queryClient.invalidateQueries({ queryKey: ['transactions', user?.uid] });
             queryClient.invalidateQueries({ queryKey: ['availableSlots'] });
             queryClient.invalidateQueries({ queryKey: ['allTransactions'] });
@@ -209,21 +219,29 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
             });
             form.reset();
             setStep(1);
+
           } catch (error: any) {
-              console.error("Error processing booking:", error);
-              
-              // --- UPDATED ERROR HANDLING ---
-              if (error.code === 'permission-denied') {
-                  toast.error('Booking Failed!', {
-                      description: 'Sorry, this time slot was just taken by someone else. Please select a new slot.',
-                  });
-                  queryClient.invalidateQueries({ queryKey: ['availableSlots'] });
-                  setOpen(true);
-              } else {
-                  toast.error('Payment successful, but failed to save transaction details.', {
-                    description: 'Please contact support with your payment ID for assistance.',
-                  });
-              }
+            console.error("Error processing booking transaction:", error);
+            
+            // Now we can provide much more specific feedback to the user!
+            if (error.message === "SLOT_ALREADY_BOOKED") {
+                toast.error('Booking Failed!', {
+                    description: 'Sorry, this time slot was just taken by someone else. Please select a new slot.',
+                });
+            } else if (error.message === "SLOT_DELETED") {
+                toast.error('Booking Failed!', {
+                    description: 'The time slot you selected is no longer available. Please select a different one.',
+                });
+            } else {
+                // Fallback for other unexpected errors (e.g., network issues)
+                toast.error('Booking could not be saved.', {
+                  description: 'Your payment was successful. Please contact support.',
+                });
+            }
+
+            // Always refetch slots and reopen the dialog on failure so the user can try again
+            queryClient.invalidateQueries({ queryKey: ['availableSlots'] });
+            setOpen(true);
           }
         },
         prefill: {
@@ -242,11 +260,6 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
             console.log('Payment modal dismissed');
             setTimeout(() => setOpen(true), 100);
           },
-          confirm_close: true,
-          escape: true,
-          animation: false,
-          backdrop_close: false,
-          handleback: true,
         },
       };
 
