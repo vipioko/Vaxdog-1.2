@@ -117,7 +117,6 @@ const PetHostelServiceDetail = () => {
               {allImages.map((_, index) => (
                 <button
                   key={index}
-                  // --- FIX: REMOVED BACKSLASHES ---
                   className={`w-2 h-2 rounded-full transition-colors ${
                     index === currentImageIndex ? 'bg-white' : 'bg-white/50'
                   }`}
@@ -134,7 +133,6 @@ const PetHostelServiceDetail = () => {
               {allImages.map((image, index) => (
                 <button
                   key={index}
-                  // --- FIX: REMOVED BACKSLASHES ---
                   className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
                     index === currentImageIndex 
                       ? 'border-blue-500' 
@@ -144,7 +142,6 @@ const PetHostelServiceDetail = () => {
                 >
                   <img 
                     src={image} 
-                    // --- FIX: REMOVED BACKSLASHES ---
                     alt={`${service.name} ${index + 1}`}
                     className="w-full h-full object-cover"
                   />
@@ -169,20 +166,19 @@ const PetHostelServiceDetail = () => {
           </div>
         </div>
 
-        <Button 
-          className="w-full bg-blue-500 hover:bg-blue-600 text-white h-12 font-semibold" // This can be implemented later
-        >
-          <ServiceBookingDialog serviceType="petHostel" service={service}>
-          
-          <HomeIcon className="h-5 w-5 mr-2" />
-          Book Pet Hostel
-        </Button>
+        <ServiceBookingDialog serviceType="petHostel" service={service}>
+          <Button 
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white h-12 font-semibold"
+          >
+            <HomeIcon className="h-5 w-5 mr-2" />
+            Book Pet Hostel
+          </Button>
+        </ServiceBookingDialog>
 
         {service.description && (
           <Card className="bg-slate-800/50 border-slate-700">
             <CardContent className="p-4">
               <h3 className="text-lg font-semibold mb-3 text-white">Service Details</h3>
-          </ServiceBookingDialog>
               <p className="text-slate-300 text-sm leading-relaxed">
                 {service.description}
               </p>
