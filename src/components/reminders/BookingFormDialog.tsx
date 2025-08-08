@@ -158,17 +158,13 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
           try {
             console.log('Payment successful, attempting to commit booking transactionally:', response);
             
-            // Get the slot ID from the state before entering the transaction
             const slotId = selectedSlot!.id;
 
             await runTransaction(db, async (transaction) => {
-              // --- THE CRITICAL FIX ---
-              // Create a fresh, clean document reference *inside* the transaction
-              // to prevent using cached data that includes the "updateTime" precondition.
-              const freshSlotDocRef = doc(db, 'bookingSlots', slotId);
+              const slotDocRef = doc(db, 'bookingSlots', slotId);
+              const newTransactionRef = doc(collection(db, 'users', user!.uid, 'transactions'));
 
-              // Use the fresh reference for the get() operation
-              const slotDoc = await transaction.get(freshSlotDocRef);
+              const slotDoc = await transaction.get(slotDocRef);
 
               if (!slotDoc.exists()) {
                 throw new Error("SLOT_DELETED");
@@ -178,15 +174,15 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
                 throw new Error("SLOT_ALREADY_BOOKED");
               }
               
-              const newTransactionRef = doc(collection(db, 'users', user!.uid, 'transactions'));
-              
-              // Use the fresh reference for the update() operation
-              transaction.update(freshSlotDocRef, {
+              // --- THE FINAL FIX ---
+              // Use set with merge:true instead of update to bypass the SDK bug.
+              transaction.set(slotDocRef, {
                 isBooked: true,
                 bookedBy: user!.uid,
                 transactionId: newTransactionRef.id,
-              });
+              }, { merge: true });
 
+              // This set operation for a new document is fine as-is.
               transaction.set(newTransactionRef, {
                 paymentId: response.razorpay_payment_id,
                 amount: totalAmount,
