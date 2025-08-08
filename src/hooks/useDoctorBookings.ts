@@ -82,18 +82,6 @@ const fetchDoctorBookings = async (doctorId: string): Promise<DoctorBooking[]> =
     return [];
   }
 };
-  
-  // TODO: Implement actual query when admin assigns doctors to bookings
-  // Example query structure:
-  // const bookingsQuery = query(
-  //   collection(db, 'bookings'),
-  //   where('assignedDoctorId', '==', doctorId)
-  // );
-  // const snapshot = await getDocs(bookingsQuery);
-  // return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DoctorBooking));
-  
-  return [];
-};
 
 export const useDoctorBookings = () => {
   const { user, isDoctor } = useAuth();
