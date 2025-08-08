@@ -13,6 +13,8 @@ export interface Transaction {
     amount: number;
     status: string; // e.g., 'successful', 'failed', 'pending', 'confirmed', 'completed', 'cancelled'
     createdAt: Timestamp;
+    rawPaymentStatus?: string; // Added for completeness
+    rawBookingStatus?: string; // Added for completeness
     paymentId?: string;
     // Fields specific to vaccination bookings (now optional)
     reminderId?: string;
@@ -68,6 +70,8 @@ export const useTransactions = () => {
                 status: data.status,
                 createdAt: data.createdAt,
                 paymentId: data.paymentId,
+                rawPaymentStatus: data.status,
+                rawBookingStatus: data.status === 'successful' ? 'confirmed' : 'pending', // Infer or leave undefined if not explicitly stored
                 reminderId: data.reminderId,
                 slotId: data.slotId,
                 slotDatetime: data.slotDatetime,
@@ -88,12 +92,14 @@ export const useTransactions = () => {
                 type: 'grooming',
                 service: data.serviceName,
                 amount: data.amount,
-                status: data.bookingStatus, // Map bookingStatus to status
+                status: data.paymentStatus, // Use paymentStatus for the main 'status' field
                 createdAt: data.createdAt,
                 paymentId: data.razorpayPaymentId,
                 petName: data.petName,
                 petDetails: data.petDetails,
                 customer: data.customerDetails,
+                rawPaymentStatus: data.paymentStatus, // Store original
+                rawBookingStatus: data.bookingStatus, // Store original
                 preferredDate: data.preferredDate,
                 preferredTime: data.preferredTime,
             });
@@ -110,12 +116,14 @@ export const useTransactions = () => {
                 type: 'petHostel',
                 service: data.serviceName,
                 amount: data.amount,
-                status: data.bookingStatus, // Map bookingStatus to status
+                status: data.paymentStatus, // Use paymentStatus for the main 'status' field
                 createdAt: data.createdAt,
                 paymentId: data.razorpayPaymentId,
                 petName: data.petName,
                 petDetails: data.petDetails,
                 customer: data.customerDetails,
+                rawPaymentStatus: data.paymentStatus, // Store original
+                rawBookingStatus: data.bookingStatus, // Store original
                 startDate: data.startDate,
                 endDate: data.endDate,
                 foodPreference: data.foodPreference,
