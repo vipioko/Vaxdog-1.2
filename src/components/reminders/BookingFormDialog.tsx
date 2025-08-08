@@ -19,7 +19,7 @@ import useRazorpay from '@/hooks/useRazorpay';
 import { toast } from 'sonner';
 import { useAuth } from '@/providers/AuthProvider';
 import { db } from '@/firebase';
-import { collection, doc, serverTimestamp, runTransaction } from 'firebase/firestore'; 
+import { collection, doc, serverTimestamp, runTransaction } from 'firebase/firestore';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAvailableSlots } from '@/hooks/useAvailableSlots';
 import { useProducts } from '@/hooks/useProducts';
@@ -158,11 +158,17 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
           try {
             console.log('Payment successful, attempting to commit booking transactionally:', response);
             
-            const slotDocRef = doc(db, 'bookingSlots', selectedSlot!.id);
-            const transactionDocRef = doc(collection(db, 'users', user!.uid, 'transactions'));
+            // Get the slot ID from the state before entering the transaction
+            const slotId = selectedSlot!.id;
 
             await runTransaction(db, async (transaction) => {
-              const slotDoc = await transaction.get(slotDocRef);
+              // --- THE CRITICAL FIX ---
+              // Create a fresh, clean document reference *inside* the transaction
+              // to prevent using cached data that includes the "updateTime" precondition.
+              const freshSlotDocRef = doc(db, 'bookingSlots', slotId);
+
+              // Use the fresh reference for the get() operation
+              const slotDoc = await transaction.get(freshSlotDocRef);
 
               if (!slotDoc.exists()) {
                 throw new Error("SLOT_DELETED");
@@ -172,13 +178,16 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
                 throw new Error("SLOT_ALREADY_BOOKED");
               }
               
-              transaction.update(slotDocRef, {
+              const newTransactionRef = doc(collection(db, 'users', user!.uid, 'transactions'));
+              
+              // Use the fresh reference for the update() operation
+              transaction.update(freshSlotDocRef, {
                 isBooked: true,
                 bookedBy: user!.uid,
-                transactionId: transactionDocRef.id,
+                transactionId: newTransactionRef.id,
               });
 
-              transaction.set(transactionDocRef, {
+              transaction.set(newTransactionRef, {
                 paymentId: response.razorpay_payment_id,
                 amount: totalAmount,
                 currency: 'INR',
@@ -189,7 +198,7 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
                 createdAt: serverTimestamp(),
                 customer: values,
                 reminderId: reminder.id,
-                slotId: selectedSlot!.id,
+                slotId: slotId,
                 slotDatetime: selectedSlot!.datetime,
                 userId: user!.uid,
               });
