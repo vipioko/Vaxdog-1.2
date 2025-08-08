@@ -5,14 +5,14 @@ import { useAuth } from '@/providers/AuthProvider';
 
 export interface DoctorBooking {
   id: string;
-  userId: string;
+  userId: string; // Added to get the pet owner's UID
   customerName: string;
   customerPhone: string;
   customerAddress?: string;
   petName?: string;
   service: string;
   amount?: number;
-  status: 'confirmed' | 'completed' | 'cancelled';
+  status: 'confirmed' | 'completed' | 'cancelled'; // Status can now be completed
   scheduledDate?: Timestamp;
   assignedDoctorId: string;
   createdAt?: Timestamp;
@@ -25,6 +25,7 @@ export interface DoctorBooking {
     dateOfBirth: string;
     age: number;
   };
+  reminderId?: string; // Added to link to the reminder
 }
 
 const fetchDoctorBookings = async (doctorId: string): Promise<DoctorBooking[]> => {
@@ -34,8 +35,8 @@ const fetchDoctorBookings = async (doctorId: string): Promise<DoctorBooking[]> =
     // Use a collectionGroup query to get all transactions assigned to this doctor
     const transactionsQuery = query(
       collectionGroup(db, 'transactions'), // Query the 'transactions' collection group
-      where('assignedDoctorId', '==', doctorId),
-      where('status', '==', 'successful')
+      where('assignedDoctorId', '==', doctorId)
+      // Removed where('status', '==', 'successful') to fetch all assigned transactions regardless of their status
     );
     const transactionsSnapshot = await getDocs(transactionsQuery);
     
@@ -53,11 +54,12 @@ const fetchDoctorBookings = async (doctorId: string): Promise<DoctorBooking[]> =
         petName: transactionData.dogName,
         service: transactionData.service,
         amount: transactionData.amount,
-        status: 'confirmed', // Assuming confirmed for assigned bookings
+        status: transactionData.status || 'confirmed', // Dynamically get status from transaction
         scheduledDate: transactionData.slotDatetime,
         assignedDoctorId: doctorId,
         createdAt: transactionData.createdAt,
         petDetails: transactionData.petDetails, // Directly use petDetails from transaction
+        reminderId: transactionData.reminderId, // Get reminderId from transaction
       };
       
       allBookings.push(booking);
