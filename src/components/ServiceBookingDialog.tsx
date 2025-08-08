@@ -210,6 +210,13 @@ const ServiceBookingDialog: React.FC<ServiceBookingDialogProps> = ({ serviceType
               name: selectedPet.name,
               breed: selectedPet.breed,
               petType: selectedPet.petType,
+              dateOfBirth: selectedPet.dateOfBirth,
+              age: selectedPet.age,
+              aggressionLevel: selectedPet.aggressionLevel,
+              weight: selectedPet.weight,
+              sex: selectedPet.sex,
+              // Mating interest, pregnancy count, pup count are not typically part of booking petDetails
+              // as they are not directly relevant to the service being booked.
             },
             razorpayPaymentId: response.razorpay_payment_id,
             razorpayOrderId: response.razorpay_order_id || null,

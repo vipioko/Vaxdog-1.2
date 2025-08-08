@@ -10,6 +10,7 @@ import { useDogs } from '@/hooks/useDogs';
 import { useReminders } from '@/hooks/useReminders';
 import RemindersSkeleton from '@/components/reminders/RemindersSkeleton';
 import { useTransactions } from '@/hooks/useTransactions'; // FIX: Import useTransactions
+import AllCompletedBookingsList from '@/components/bookings/AllCompletedBookingsList';
 import BookingsList from '@/components/bookings/BookingsList';
 
 const Dashboard = () => {
@@ -75,7 +76,7 @@ const Dashboard = () => {
                   <RemindersSkeleton />
                 ) : (
                   <div className="space-y-3">
-                    <UpcomingReminders 
+                    <UpcomingReminders
                       reminders={reminders} 
                       transactions={transactions} // FIX: Pass unified transactions
                       onMarkAsComplete={markReminderAsComplete}
@@ -94,8 +95,8 @@ const Dashboard = () => {
                 {isLoadingReminders ? (
                   <RemindersSkeleton />
                 ) : (
-                  <div className="space-y-3">
-                    <CompletedReminders reminders={reminders} title="" />
+                  <div className="space-y-3"> {/* FIX: Use AllCompletedBookingsList */}
+                    <AllCompletedBookingsList transactions={transactions} />
                   </div>
                 )}
               </TabsContent>

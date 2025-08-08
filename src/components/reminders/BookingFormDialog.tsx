@@ -197,6 +197,16 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
                 slotId: slotId,
                 slotDatetime: selectedSlot!.datetime,
                 userId: user!.uid,
+                petDetails: { // Include full pet details
+                  name: currentDog.name,
+                  breed: currentDog.breed,
+                  petType: currentDog.petType,
+                  dateOfBirth: currentDog.dateOfBirth,
+                  age: currentDog.age,
+                  aggressionLevel: currentDog.aggressionLevel,
+                  weight: currentDog.weight,
+                  sex: currentDog.sex,
+                },
               });
             });
 

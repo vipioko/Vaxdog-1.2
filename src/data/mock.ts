@@ -2,11 +2,11 @@ export interface Dog {
   id: string;
   name: string;
   breed: string;
-  age: number;
+  age: number; // in years, can be decimal
   imageUrl?: string;
   petType: string;
   dateOfBirth: string;
-  // New enhanced fields
+  // Enhanced fields
   aggressionLevel?: 'Low' | 'Medium' | 'High';
   weight?: number; // in kg
   sex?: 'Male' | 'Female';
@@ -75,6 +75,11 @@ export interface BaseBooking {
     name: string;
     breed: string;
     petType: string;
+    dateOfBirth?: string;
+    age?: number;
+    aggressionLevel?: 'Low' | 'Medium' | 'High';
+    weight?: number; // in kg
+    sex?: 'Male' | 'Female';
   };
   razorpayPaymentId?: string;
   razorpayOrderId?: string;

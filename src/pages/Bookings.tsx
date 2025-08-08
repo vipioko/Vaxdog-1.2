@@ -394,7 +394,16 @@ const GroomingBookingsList = ({ transactions }: { transactions: Transaction[] })
                 </Badge>
               </div>
               <div className="space-y-2 text-sm">
-                <p className="text-slate-300">For: {booking.petName} ({booking.petDetails?.breed})</p> {/* FIX: Use petDetails */}
+                <p className="text-slate-300">For: {booking.petName} ({booking.petDetails?.breed})</p>
+                {booking.petDetails?.age && (
+                  <p className="text-slate-300">Age: {booking.petDetails.age} years</p>
+                )}
+                {booking.petDetails?.weight && (
+                  <p className="text-slate-300">Weight: {booking.petDetails.weight} kg</p>
+                )}
+                {booking.petDetails?.sex && (
+                  <p className="text-slate-300">Sex: {booking.petDetails.sex}</p>
+                )}
                 <p className="text-slate-300">Date: {booking.preferredDate ? format(new Date(booking.preferredDate), 'PPP') : 'N/A'}</p>
                 <p className="text-slate-300">Time: {booking.preferredTime || 'N/A'}</p>
                 <div className="flex items-center text-white font-bold">
@@ -480,7 +489,16 @@ const PetHostelBookingsList = ({ transactions }: { transactions: Transaction[] }
                 </Badge>
               </div>
               <div className="space-y-2 text-sm">
-                <p className="text-slate-300">For: {booking.petName} ({booking.petDetails?.breed})</p> {/* FIX: Use petDetails */}
+                <p className="text-slate-300">For: {booking.petName} ({booking.petDetails?.breed})</p>
+                {booking.petDetails?.age && (
+                  <p className="text-slate-300">Age: {booking.petDetails.age} years</p>
+                )}
+                {booking.petDetails?.weight && (
+                  <p className="text-slate-300">Weight: {booking.petDetails.weight} kg</p>
+                )}
+                {booking.petDetails?.sex && (
+                  <p className="text-slate-300">Sex: {booking.petDetails.sex}</p>
+                )}
                 <p className="text-slate-300">Check-in: {booking.startDate ? format(new Date(booking.startDate), 'PPP') : 'N/A'}</p>
                 <p className="text-slate-300">Check-out: {booking.endDate ? format(new Date(booking.endDate), 'PPP') : 'N/A'}</p>
                 <p className="text-slate-300">Food: {booking.foodPreference || 'N/A'}</p>

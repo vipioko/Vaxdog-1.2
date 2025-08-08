@@ -27,6 +27,9 @@ export interface Transaction {
       petType: string;
       dateOfBirth?: string;
       age?: number;
+      aggressionLevel?: 'Low' | 'Medium' | 'High';
+      weight?: number; // in kg
+      sex?: 'Male' | 'Female';
     };
     customer?: {
       name: string;
