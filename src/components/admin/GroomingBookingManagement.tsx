@@ -427,3 +427,4 @@ const GroomingBookingManagement = () => {
     </Card>
   );
 };
+export default GroomingBookingManagement;
