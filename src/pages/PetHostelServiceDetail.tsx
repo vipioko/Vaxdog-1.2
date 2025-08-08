@@ -230,4 +230,3 @@ const PetHostelServiceDetail = () => {
 };
 
 export default PetHostelServiceDetail;
-```
