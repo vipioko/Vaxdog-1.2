@@ -1,3 +1,4 @@
+// src/pages/Dashboard.tsx
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Bell, Plus } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,8 +9,7 @@ import AddReminderDialog from '@/components/reminders/AddReminderDialog';
 import { useDogs } from '@/hooks/useDogs';
 import { useReminders } from '@/hooks/useReminders';
 import RemindersSkeleton from '@/components/reminders/RemindersSkeleton';
-import { useTransactions } from '@/hooks/useTransactions';
-import BookingsList from '@/components/bookings/BookingsList';
+import { useTransactions } from '@/hooks/useTransactions'; // FIX: Import useTransactions
 
 const Dashboard = () => {
   const { dogs, isLoadingDogs } = useDogs();
@@ -21,7 +21,7 @@ const Dashboard = () => {
     deleteReminder,
     editReminder,
   } = useReminders();
-  const { transactions, isLoading: isLoadingTransactions } = useTransactions();
+  const { transactions, isLoading: isLoadingTransactions } = useTransactions(); // FIX: Get transactions from unified hook
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 pb-20">
@@ -76,7 +76,7 @@ const Dashboard = () => {
                   <div className="space-y-3">
                     <UpcomingReminders 
                       reminders={reminders} 
-                      transactions={transactions}
+                      transactions={transactions} // FIX: Pass unified transactions
                       onMarkAsComplete={markReminderAsComplete}
                       onDeleteReminder={deleteReminder}
                       onEditReminder={editReminder}
@@ -107,7 +107,8 @@ const Dashboard = () => {
                   <RemindersSkeleton />
                 ) : (
                   <div className="space-y-3">
-                    <BookingsList transactions={transactions} />
+                    {/* FIX: Filter transactions to only show vaccination bookings for this list */}
+                    <BookingsList transactions={transactions.filter(tx => tx.type === 'vaccination')} />
                   </div>
                 )}
               </TabsContent>
@@ -120,3 +121,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
