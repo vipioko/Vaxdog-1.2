@@ -19,7 +19,6 @@ import useRazorpay from '@/hooks/useRazorpay';
 import { toast } from 'sonner';
 import { useAuth } from '@/providers/AuthProvider';
 import { db } from '@/firebase';
-// --- CHANGE 1: Import runTransaction and remove writeBatch ---
 import { collection, doc, serverTimestamp, runTransaction } from 'firebase/firestore'; 
 import { useQueryClient } from '@tanstack/react-query';
 import { useAvailableSlots } from '@/hooks/useAvailableSlots';
@@ -129,7 +128,6 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
     const selectedSlot = availableSlots?.find(s => s.id === values.slotId);
     if (!selectedSlot) {
         toast.error("Selected slot is not available. Please choose another one.");
-        // Refetch slots in case the list is stale
         queryClient.invalidateQueries({ queryKey: ['availableSlots'] });
         return;
     }
@@ -156,41 +154,31 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
         name: 'VaxDog - Home Vaccination',
         description: `Booking for ${vaccineNames} for ${reminder.dog}`,
         image: '/favicon.ico',
-        // --- CHANGE 2: Replace the entire handler with robust Transaction logic ---
         handler: async function (response: any) {
           try {
             console.log('Payment successful, attempting to commit booking transactionally:', response);
             
             const slotDocRef = doc(db, 'bookingSlots', selectedSlot!.id);
-            const transactionCollectionRef = collection(db, 'users', user!.uid, 'transactions');
-            const newTransactionRef = doc(transactionCollectionRef);
+            const transactionDocRef = doc(collection(db, 'users', user!.uid, 'transactions'));
 
-            // runTransaction is an atomic operation. It will fail safely if the data changes while it's running.
             await runTransaction(db, async (transaction) => {
-              // 1. Read the slot document *inside* the transaction
               const slotDoc = await transaction.get(slotDocRef);
 
-              // 2. Check if the slot was deleted while the user was paying
               if (!slotDoc.exists()) {
                 throw new Error("SLOT_DELETED");
               }
 
-              // 3. Check if the slot was booked by someone else while the user was paying
               if (slotDoc.data().isBooked === true) {
                 throw new Error("SLOT_ALREADY_BOOKED");
               }
-
-              // 4. If all checks pass, proceed with the writes.
               
-              // Update the slot to be booked
               transaction.update(slotDocRef, {
                 isBooked: true,
                 bookedBy: user!.uid,
-                transactionId: newTransactionRef.id,
+                transactionId: transactionDocRef.id,
               });
 
-              // Create the new transaction record for the user
-              transaction.set(newTransactionRef, {
+              transaction.set(transactionDocRef, {
                 paymentId: response.razorpay_payment_id,
                 amount: totalAmount,
                 currency: 'INR',
@@ -207,7 +195,6 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
               });
             });
 
-            // If the transaction completes without throwing an error, it was successful.
             console.log('Transaction successfully committed!');
             
             queryClient.invalidateQueries({ queryKey: ['transactions', user?.uid] });
@@ -223,23 +210,16 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
           } catch (error: any) {
             console.error("Error processing booking transaction:", error);
             
-            // Now we can provide much more specific feedback to the user!
-            if (error.message === "SLOT_ALREADY_BOOKED") {
+            if (error.message === "SLOT_ALREADY_BOOKED" || error.message === "SLOT_DELETED") {
                 toast.error('Booking Failed!', {
-                    description: 'Sorry, this time slot was just taken by someone else. Please select a new slot.',
-                });
-            } else if (error.message === "SLOT_DELETED") {
-                toast.error('Booking Failed!', {
-                    description: 'The time slot you selected is no longer available. Please select a different one.',
+                    description: 'Sorry, this time slot is no longer available. Please select a new one.',
                 });
             } else {
-                // Fallback for other unexpected errors (e.g., network issues)
                 toast.error('Booking could not be saved.', {
                   description: 'Your payment was successful. Please contact support.',
                 });
             }
 
-            // Always refetch slots and reopen the dialog on failure so the user can try again
             queryClient.invalidateQueries({ queryKey: ['availableSlots'] });
             setOpen(true);
           }
