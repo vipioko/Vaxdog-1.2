@@ -15,8 +15,10 @@ import Bookings from "./pages/Bookings";
 import Checkout from "./pages/Checkout";
 import MyOrders from "./pages/MyOrders";
 import Admin from "./pages/Admin";
+import DoctorPanel from "./pages/DoctorPanel";
 import Layout from "./components/Layout";
 import AdminLayout from "./components/admin/AdminLayout";
+import DoctorLayout from "./components/doctor/DoctorLayout";
 import DogProfile from "./pages/DogProfile";
 import Profile from "./pages/Profile";
 import { AuthProvider, useAuth } from "./providers/AuthProvider";
@@ -24,7 +26,7 @@ import { AuthProvider, useAuth } from "./providers/AuthProvider";
 const queryClient = new QueryClient();
 
 const AppRoutes: React.FC = () => {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isAdmin, userRole, isPetOwner, isDoctor } = useAuth();
   const [reminderDueSoonDays, setReminderDueSoonDays] = useState(30);
 
   if (loading) {
@@ -37,13 +39,23 @@ const AppRoutes: React.FC = () => {
 
   return (
     <Routes>
-      <Route path="/" element={!user ? <Index /> : <Navigate to={isAdmin ? "/admin" : "/home"} replace />} />
+      <Route path="/" element={!user ? <Index /> : <Navigate to={
+        isAdmin ? "/admin" : 
+        isDoctor ? "/doctor" : 
+        isPetOwner ? "/home" : 
+        "/home"
+      } replace />} />
       
       {user ? (
         isAdmin ? (
           <Route element={<AdminLayout />}>
             <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<Navigate to="/admin" replace />} />
+          </Route>
+        ) : isDoctor ? (
+          <Route element={<DoctorLayout />}>
+            <Route path="/doctor" element={<DoctorPanel />} />
+            <Route path="*" element={<Navigate to="/doctor" replace />} />
           </Route>
         ) : (
           <Route element={<Layout />}>
