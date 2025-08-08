@@ -206,6 +206,10 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
                   aggressionLevel: currentDog.aggressionLevel,
                   weight: currentDog.weight,
                   sex: currentDog.sex,
+                  matingInterest: currentDog.matingInterest,
+                  pregnancyCount: currentDog.pregnancyCount,
+                  pupCount: currentDog.pupCount,
+                  vaccinationScheduleImages: currentDog.vaccinationScheduleImages,
                 },
               });
             });

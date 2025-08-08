@@ -46,6 +46,10 @@ import {
   CheckCircle,
   XCircle,
   Dog,
+  Cake,
+  Heart,
+  Users,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -342,6 +346,151 @@ const GroomingBookingManagement = () => {
                     <p className="font-semibold text-white">{selectedBooking.petName}</p>
                     <p className="text-sm text-slate-400">Breed: {selectedBooking.petDetails.breed}</p>
                     <p className="text-sm text-slate-400">Type: {selectedBooking.petDetails.petType}</p>
+                    {selectedBooking.petDetails.dateOfBirth && (
+                      <p className="text-sm text-slate-400 flex items-center gap-1">
+                        <Cake className="h-4 w-4" /> DOB: {format(new Date(selectedBooking.petDetails.dateOfBirth), 'PPP')}
+                      </p>
+                    )}
+                    {selectedBooking.petDetails.age !== undefined && (
+                      <p className="text-sm text-slate-400">Age: {selectedBooking.petDetails.age} years</p>
+                    )}
+                    {selectedBooking.petDetails.weight !== undefined && (
+                      <p className="text-sm text-slate-400">Weight: {selectedBooking.petDetails.weight} kg</p>
+                    )}
+                    {selectedBooking.petDetails.sex && (
+                      <p className="text-sm text-slate-400">Sex: {selectedBooking.petDetails.sex}</p>
+                    )}
+                    {selectedBooking.petDetails.aggressionLevel && (
+                      <p className="text-sm text-slate-400">Aggression Level: {selectedBooking.petDetails.aggressionLevel}</p>
+                    )}
+                    {selectedBooking.petDetails.matingInterest !== undefined && (
+                      <p className="text-sm text-slate-400 flex items-center gap-1">
+                        <Heart className="h-4 w-4" /> Mating Interest: {selectedBooking.petDetails.matingInterest ? 'Yes' : 'No'}
+                      </p>
+                    )}
+                    {selectedBooking.petDetails.sex === 'Female' && selectedBooking.petDetails.pregnancyCount !== undefined && (
+                      <p className="text-sm text-slate-400">Times Pregnant: {selectedBooking.petDetails.pregnancyCount}</p>
+                    )}
+                    {selectedBooking.petDetails.sex === 'Female' && selectedBooking.petDetails.pupCount !== undefined && (
+                      <p className="text-sm text-slate-400">Total Offspring: {selectedBooking.petDetails.pupCount}</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {selectedBooking.petDetails?.vaccinationScheduleImages && selectedBooking.petDetails.vaccinationScheduleImages.length > 0 && (
+                  <Card className="bg-slate-700/30 border-slate-600">
+                    <CardContent className="p-4">
+                      <h4 className="font-medium text-white mb-2 flex items-center">
+                        <ImageIcon className="h-4 w-4 mr-2" />
+                        Vaccination Schedule Images
+                      </h4>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {selectedBooking.petDetails.vaccinationScheduleImages.map((imageUrl, index) => (
+                          <a
+                            key={index}
+                            href={imageUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block relative group"
+                          >
+                            <img
+                              src={imageUrl}
+                              alt={`Vaccination Schedule ${index + 1}`}
+                              className="w-full h-24 object-cover rounded-md border border-gray-300 group-hover:opacity-75 transition-opacity"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-md">
+                              <Eye className="h-6 w-6 text-white" />
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Service Info */}
+                <Card className="bg-slate-700/30 border-slate-600">
+                  <CardContent className="p-4">
+                    <h4 className="font-medium text-white mb-2 flex items-center">
+                      <Scissors className="h-4 w-4 mr-2" />
+                      Service Details
+                    </h4>
+                    <p className="font-semibold text-white">{selectedBooking.serviceName}</p>
+                    <p className="text-sm text-slate-400">
+                      Date: {selectedBooking.preferredDate ? format(new Date(selectedBooking.preferredDate), 'PPP') : 'N/A'}
+                    </p>
+                    <p className="text-sm text-slate-400">Time: {selectedBooking.preferredTime || 'N/A'}</p>
+                    <div className="flex items-center text-white font-bold mt-2">
+                      <IndianRupee className="h-4 w-4 mr-1" />
+                      {selectedBooking.amount.toFixed(2)}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Status & Payment */}
+                <Card className="bg-slate-700/30 border-slate-600">
+                  <CardContent className="p-4">
+                    <h4 className="font-medium text-white mb-2 flex items-center">
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Status & Payment
+                    </h4>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge className={getStatusColor(selectedBooking.bookingStatus)}>
+                        {getStatusIcon(selectedBooking.bookingStatus)}
+                        <span className="ml-1 capitalize">{selectedBooking.bookingStatus}</span>
+                      </Badge>
+                      <Badge className="bg-green-500/20 text-green-300 border-green-500/30">
+                        {selectedBooking.paymentStatus}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-slate-400">Payment Method: {selectedBooking.paymentMethod}</p>
+                    <p className="text-sm text-slate-400">Payment ID: {selectedBooking.razorpayPaymentId || 'N/A'}</p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Status Update Dialog */}
+        <Dialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
+          <DialogContent className="bg-slate-800 border-slate-700 text-white">
+            <DialogHeader>
+              <DialogTitle className="text-white">Update Grooming Booking Status</DialogTitle>
+            </DialogHeader>
+            {statusUpdateBooking && (
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="status" className="text-white">Booking Status</Label>
+                  <Select value={newStatus} onValueChange={setNewStatus}>
+                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-800 border-slate-700 text-white">
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="confirmed">Confirmed</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsStatusDialogOpen(false)} className="bg-slate-700 border-slate-600 text-white hover:bg-slate-600">
+                Cancel
+              </Button>
+              <Button onClick={handleStatusUpdate} disabled={isUpdatingGroomingBookingStatus} className="bg-blue-500 hover:bg-blue-600">
+                {isUpdatingGroomingBookingStatus ? 'Updating...' : 'Update Status'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </CardContent>
+    </Card>
+  );
+};
+export default GroomingBookingManagement;
                   </CardContent>
                 </Card>
 

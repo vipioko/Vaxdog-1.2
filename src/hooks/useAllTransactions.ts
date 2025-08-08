@@ -21,6 +21,12 @@ export interface AdminTransaction {
     age: number;
   };
   vaccines?: Array<{ name: string; price: number }>;
+  aggressionLevel?: 'Low' | 'Medium' | 'High';
+  weight?: number; // in kg
+  sex?: 'Male' | 'Female';
+  matingInterest?: boolean;
+  pregnancyCount?: number; // Only for female pets
+  pupCount?: number; // Only for female pets
   status: string;
   createdAt: Timestamp;
   customer?: {
@@ -181,6 +187,12 @@ export const useAllTransactions = () => {
                     petType: matchingDog.petType || 'Dog',
                     dateOfBirth: matchingDog.dateOfBirth || '',
                     age: matchingDog.age || 0,
+                    aggressionLevel: matchingDog.aggressionLevel,
+                    weight: matchingDog.weight,
+                    sex: matchingDog.sex,
+                    matingInterest: matchingDog.matingInterest,
+                    pregnancyCount: matchingDog.pregnancyCount,
+                    pupCount: matchingDog.pupCount,
                   };
                   console.log(`Found pet details for ${transactionData.dogName}:`, petDetails);
                 }

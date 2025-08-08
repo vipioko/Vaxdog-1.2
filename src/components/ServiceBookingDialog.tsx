@@ -215,6 +215,10 @@ const ServiceBookingDialog: React.FC<ServiceBookingDialogProps> = ({ serviceType
               aggressionLevel: selectedPet.aggressionLevel,
               weight: selectedPet.weight,
               sex: selectedPet.sex,
+              matingInterest: selectedPet.matingInterest,
+              pregnancyCount: selectedPet.pregnancyCount,
+              pupCount: selectedPet.pupCount,
+              vaccinationScheduleImages: selectedPet.vaccinationScheduleImages,
               // Mating interest, pregnancy count, pup count are not typically part of booking petDetails
               // as they are not directly relevant to the service being booked.
             },

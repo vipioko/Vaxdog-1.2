@@ -31,7 +31,11 @@ export interface Transaction {
       age?: number;
       aggressionLevel?: 'Low' | 'Medium' | 'High';
       weight?: number; // in kg
-      sex?: 'Male' | 'Female';
+ sex?: 'Male' | 'Female';
+      matingInterest?: boolean;
+      pregnancyCount?: number; // Only for female pets
+      pupCount?: number; // Only for female pets
+      vaccinationScheduleImages?: string[]; // Multiple vaccination schedule images
     };
     customer?: {
       name: string;

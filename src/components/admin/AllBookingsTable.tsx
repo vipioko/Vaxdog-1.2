@@ -23,7 +23,7 @@ import {
 import { Input } from "@/components/ui/input"
 import {
     DropdownMenu,
-    DropdownMenuCheckboxItem,
+    DropdownMenuCheckboxItem, // Keep this import if it's used elsewhere in the file
     DropdownMenuContent,
     DropdownMenuTrigger,
     DropdownMenuLabel,
@@ -33,6 +33,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import { db } from '@/firebase';
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { useAdminReminders } from '@/hooks/useAdminReminders';
+import { formatDistanceToNow } from 'date-fns';
 
 const AllBookingsTable: React.FC = () => {
     const { transactions, isLoading, error } = useAllTransactions();
@@ -289,6 +290,67 @@ const AllBookingsTable: React.FC = () => {
                                                     <span className="ml-1">{format(new Date(selectedBooking.petDetails.dateOfBirth), 'MMM d, yyyy')}</span>
                                                 </div>
                                             )}
+                                            {selectedBooking.petDetails.weight !== undefined && (
+                                                <p><span className="font-medium">Weight:</span> {selectedBooking.petDetails.weight} kg</p>
+                                            )}
+                                            {selectedBooking.petDetails.sex && (
+                                                <p><span className="font-medium">Sex:</span> {selectedBooking.petDetails.sex}</p>
+                                            )}
+                                            {selectedBooking.petDetails.aggressionLevel && (
+                                                <p><span className="font-medium">Aggression Level:</span> {selectedBooking.petDetails.aggressionLevel}</p>
+                                            )}
+                                            {selectedBooking.petDetails.matingInterest !== undefined && (
+                                                <p><span className="font-medium">Mating Interest:</span> {selectedBooking.petDetails.matingInterest ? 'Yes' : 'No'}</p>
+                                            )}
+                                            {selectedBooking.petDetails.sex === 'Female' && selectedBooking.petDetails.pregnancyCount !== undefined && (
+                                                <p><span className="font-medium">Times Pregnant:</span> {selectedBooking.petDetails.pregnancyCount}</p>
+                                            )}
+                                            {selectedBooking.petDetails.sex === 'Female' && selectedBooking.petDetails.pupCount !== undefined && (
+                                                <p><span className="font-medium">Total Offspring:</span> {selectedBooking.petDetails.pupCount}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {selectedBooking.petDetails?.vaccinationScheduleImages && selectedBooking.petDetails.vaccinationScheduleImages.length > 0 && (
+                                    <div className="border rounded-lg p-3 bg-muted/30">
+                                        <h4 className="font-semibold flex items-center mb-2">
+                                            <Calendar className="h-4 w-4 mr-2" />
+                                            Vaccination Schedule Images
+                                        </h4>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                            {selectedBooking.petDetails.vaccinationScheduleImages.map((imageUrl, index) => (
+                                                <a 
+                                                    key={index} 
+                                                    href={imageUrl} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer" 
+                                                    className="block relative group"
+                                                >
+                                                    <img 
+                                                        src={imageUrl} 
+                                                        alt={`Vaccination Schedule ${index + 1}`} 
+                                                        className="w-full h-24 object-cover rounded-md border border-gray-300 group-hover:opacity-75 transition-opacity" 
+                                                    />
+                                                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-md">
+                                                        <Eye className="h-6 w-6 text-white" />
+                                                    </div>
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {selectedBooking.vaccines && selectedBooking.vaccines.length > 0 && (
+                                    <div className="border rounded-lg p-3 bg-muted/30">
+                                        <h4 className="font-semibold flex items-center mb-2">
+                                            <Stethoscope className="h-4 w-4 mr-2" />
+                                            Vaccines Administered
+                                        </h4>
+                                        <ul className="list-disc list-inside text-sm space-y-1">
+                                            {selectedBooking.vaccines.map((vaccine, index) => (
+                                                <li key={index}>{vaccine.name} (₹{vaccine.price.toFixed(2)})</li>
+                                            ))}
                                         </div>
                                     </div>
                                 )}
