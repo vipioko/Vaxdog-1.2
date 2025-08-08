@@ -138,5 +138,27 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow create, update, delete: if isAdmin();
     }
+
+    // Rules for grooming bookings
+    match /users/{userId}/groomingBookings/{bookingId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isAdmin();
+    }
+
+    // Collection group for grooming bookings (for admin to read all)
+    match /{path=**}/groomingBookings/{bookingId} {
+      allow read: if isAdmin();
+    }
+
+    // Rules for pet hostel bookings
+    match /users/{userId}/petHostelBookings/{bookingId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isAdmin();
+    }
+
+    // Collection group for pet hostel bookings (for admin to read all)
+    match /{path=**}/petHostelBookings/{bookingId} {
+      allow read: if isAdmin();
+    }
   }
 }
