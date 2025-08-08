@@ -31,6 +31,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useDogs } from '@/hooks/useDogs';
 import { useReminders } from '@/hooks/useReminders';
 import { useTransactions } from '@/hooks/useTransactions';
+import { cn } from '@/lib/utils';
 
 // Popular breed lists for autocomplete
 const popularDogBreeds = [
