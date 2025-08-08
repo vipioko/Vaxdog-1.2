@@ -20,22 +20,16 @@ const PetHostelServiceDetail = () => {
   };
 
   const handlePrevImage = () => {
-    if (service?.galleryImages && service.galleryImages.length > 0) {
-      setCurrentImageIndex((prev) => 
-        prev === 0 ? service.galleryImages!.length - 1 : prev - 1
-      );
-    } else if (service?.imageUrl) {
-      setCurrentImageIndex(0); // Only one image, stay on it
+    const allImages = [service?.imageUrl, ...(service?.galleryImages || [])].filter(Boolean);
+    if (allImages.length > 1) {
+      setCurrentImageIndex((prev) => (prev === 0 ? allImages.length - 1 : prev - 1));
     }
   };
 
   const handleNextImage = () => {
-    if (service?.galleryImages && service.galleryImages.length > 0) {
-      setCurrentImageIndex((prev) => 
-        prev === service.galleryImages!.length - 1 ? 0 : prev + 1
-      );
-    } else if (service?.imageUrl) {
-      setCurrentImageIndex(0); // Only one image, stay on it
+    const allImages = [service?.imageUrl, ...(service?.galleryImages || [])].filter(Boolean);
+    if (allImages.length > 1) {
+      setCurrentImageIndex((prev) => (prev === allImages.length - 1 ? 0 : prev + 1));
     }
   };
 
@@ -96,7 +90,6 @@ const PetHostelServiceDetail = () => {
             </div>
           )}
           
-          {/* Navigation arrows */}
           {allImages.length > 1 && (
             <>
               <Button
@@ -118,13 +111,13 @@ const PetHostelServiceDetail = () => {
             </>
           )}
 
-          {/* Image indicators */}
           {allImages.length > 1 && (
             <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
               {allImages.map((_, index) => (
                 <button
                   key={index}
-                  className={\`w-2 h-2 rounded-full transition-colors ${
+                  // --- FIX: REMOVED BACKSLASHES ---
+                  className={`w-2 h-2 rounded-full transition-colors ${
                     index === currentImageIndex ? 'bg-white' : 'bg-white/50'
                   }`}
                   onClick={() => setCurrentImageIndex(index)}
@@ -134,14 +127,14 @@ const PetHostelServiceDetail = () => {
           )}
         </div>
 
-        {/* Thumbnail gallery */}
         {allImages.length > 1 && (
           <div className="p-4 bg-slate-800/50">
             <div className="flex gap-2 overflow-x-auto pb-2">
               {allImages.map((image, index) => (
                 <button
                   key={index}
-                  className={\`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
+                  // --- FIX: REMOVED BACKSLASHES ---
+                  className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
                     index === currentImageIndex 
                       ? 'border-blue-500' 
                       : 'border-slate-600 hover:border-slate-500'
@@ -150,7 +143,8 @@ const PetHostelServiceDetail = () => {
                 >
                   <img 
                     src={image} 
-                    alt={\`${service.name} ${index + 1}`}
+                    // --- FIX: REMOVED BACKSLASHES ---
+                    alt={`${service.name} ${index + 1}`}
                     className="w-full h-full object-cover"
                   />
                 </button>
@@ -162,7 +156,6 @@ const PetHostelServiceDetail = () => {
 
       {/* Service Info */}
       <div className="p-4 space-y-6">
-        {/* Title and Price */}
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-white mb-2 leading-tight">{service.name}</h1>
           <div className="flex items-center justify-between">
@@ -175,16 +168,14 @@ const PetHostelServiceDetail = () => {
           </div>
         </div>
 
-        {/* Action Button */}
         <Button 
           className="w-full bg-blue-500 hover:bg-blue-600 text-white h-12 font-semibold"
-          // onClick={handleBookHostel} // To be implemented in Phase 3
+          // onClick={handleBookHostel} // This can be implemented later
         >
           <HomeIcon className="h-5 w-5 mr-2" />
           Book Pet Hostel
         </Button>
 
-        {/* Service Details */}
         {service.description && (
           <Card className="bg-slate-800/50 border-slate-700">
             <CardContent className="p-4">
@@ -196,7 +187,6 @@ const PetHostelServiceDetail = () => {
           </Card>
         )}
 
-        {/* Amenities */}
         {service.amenities && service.amenities.length > 0 && (
           <Card className="bg-slate-800/50 border-slate-700">
             <CardContent className="p-4">
@@ -212,7 +202,6 @@ const PetHostelServiceDetail = () => {
           </Card>
         )}
 
-        {/* Additional Info */}
         <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="p-4">
             <h3 className="text-lg font-semibold mb-3 text-white">Important Information</h3>
