@@ -74,6 +74,8 @@ const MyDogs = ({ reminderDueSoonDays }: MyDogsProps) => {
     pupCount: undefined,
   });
   const [newPetFile, setNewPetFile] = useState<File | null>(null);
+  const [newPetScheduleFiles, setNewPetScheduleFiles] = useState<File[]>([]);
+  const [scheduleImagePreviews, setScheduleImagePreviews] = useState<string[]>([]);
   const [dogToEdit, setDogToEdit] = useState<Dog | null>(null);
   const [openBreedCombobox, setOpenBreedCombobox] = useState(false);
   const [breedSearch, setBreedSearch] = useState('');
@@ -124,13 +126,14 @@ const MyDogs = ({ reminderDueSoonDays }: MyDogsProps) => {
   };
 
   const addDogMutation = useMutation({
-    mutationFn: async ({ dogData, file }: { dogData: Omit<Dog, 'id' | 'imageUrl'>, file: File | null }) => {
+    mutationFn: async ({ dogData, file, scheduleFiles }: { dogData: Omit<Dog, 'id' | 'imageUrl' | 'vaccinationScheduleImages'>, file: File | null, scheduleFiles: File[] }) => {
       if (!user) {
         throw new Error("User not authenticated");
       }
 
       const dogDocRef = doc(collection(db, 'users', user.uid, 'dogs'));
       let imageUrl = '';
+      let vaccinationScheduleImages: string[] = [];
 
       if (file) {
         const storageRef = ref(storage, `users/${user.uid}/dogs/${dogDocRef.id}/${file.name}`);
@@ -138,7 +141,17 @@ const MyDogs = ({ reminderDueSoonDays }: MyDogsProps) => {
         imageUrl = await getDownloadURL(storageRef);
       }
       
-      const finalDogData: Omit<Dog, 'id'> = { ...dogData, imageUrl };
+      // Upload vaccination schedule images
+      if (scheduleFiles.length > 0) {
+        const uploadPromises = scheduleFiles.map(async (scheduleFile, index) => {
+          const scheduleRef = ref(storage, `users/${user.uid}/dogs/${dogDocRef.id}/vaccination_schedules/${index}_${scheduleFile.name}`);
+          await uploadBytes(scheduleRef, scheduleFile);
+          return getDownloadURL(scheduleRef);
+        });
+        vaccinationScheduleImages = await Promise.all(uploadPromises);
+      }
+      
+      const finalDogData: Omit<Dog, 'id'> = { ...dogData, imageUrl, vaccinationScheduleImages };
       await setDoc(dogDocRef, finalDogData);
       return { ...finalDogData, id: dogDocRef.id };
     },
@@ -147,6 +160,8 @@ const MyDogs = ({ reminderDueSoonDays }: MyDogsProps) => {
       toast.success(`Welcome ${data.name}! 🐾`);
       setNewPet({ name: '', breed: '', petType: '', dateOfBirth: '', age: 0, imageUrl: '' });
       setNewPetFile(null);
+      setNewPetScheduleFiles([]);
+      setScheduleImagePreviews([]);
       setAddDialogOpen(false);
       setBreedSearch('');
       setOpenBreedCombobox(false);
@@ -162,7 +177,7 @@ const MyDogs = ({ reminderDueSoonDays }: MyDogsProps) => {
   });
 
   const updateDogMutation = useMutation({
-    mutationFn: async ({ dogId, dogData, file }: { dogId: string; dogData: Partial<Dog>; file: File | null }) => {
+    mutationFn: async ({ dogId, dogData, file, scheduleFiles }: { dogId: string; dogData: Partial<Dog>; file: File | null; scheduleFiles?: File[] }) => {
       if (!user) throw new Error("User not authenticated");
       const dogDocRef = doc(db, 'users', user.uid, 'dogs', dogId);
 
@@ -172,6 +187,20 @@ const MyDogs = ({ reminderDueSoonDays }: MyDogsProps) => {
         const storageRef = ref(storage, `users/${user.uid}/dogs/${dogId}/${file.name}`);
         await uploadBytes(storageRef, file);
         dataToUpdate.imageUrl = await getDownloadURL(storageRef);
+      }
+      
+      // Upload new vaccination schedule images if provided
+      if (scheduleFiles && scheduleFiles.length > 0) {
+        const uploadPromises = scheduleFiles.map(async (scheduleFile, index) => {
+          const scheduleRef = ref(storage, `users/${user.uid}/dogs/${dogId}/vaccination_schedules/${Date.now()}_${index}_${scheduleFile.name}`);
+          await uploadBytes(scheduleRef, scheduleFile);
+          return getDownloadURL(scheduleRef);
+        });
+        const newScheduleImages = await Promise.all(uploadPromises);
+        
+        // Merge with existing images
+        const existingImages = dogData.vaccinationScheduleImages || [];
+        dataToUpdate.vaccinationScheduleImages = [...existingImages, ...newScheduleImages];
       }
       
       return updateDoc(dogDocRef, dataToUpdate);
@@ -262,14 +291,15 @@ const MyDogs = ({ reminderDueSoonDays }: MyDogsProps) => {
           pregnancyCount: newPet.sex === 'Female' ? newPet.pregnancyCount : undefined,
           pupCount: newPet.sex === 'Female' ? newPet.pupCount : undefined,
         },
-        file: newPetFile
+        file: newPetFile,
+        scheduleFiles: newPetScheduleFiles
       });
     } else {
       toast.error("Please fill out all fields.");
     }
   };
 
-  const handleUpdateDog = (updatedDog: Dog, newImageFile: File | null) => {
+  const handleUpdateDog = (updatedDog: Dog, newImageFile: File | null, newScheduleFiles?: File[]) => {
     if (!dogToEdit) return;
 
     const isNameTakenByAnotherDog = dogs.some(
@@ -281,7 +311,7 @@ const MyDogs = ({ reminderDueSoonDays }: MyDogsProps) => {
       return;
     }
 
-    updateDogMutation.mutate({ dogId: dogToEdit.id, dogData: updatedDog, file: newImageFile });
+    updateDogMutation.mutate({ dogId: dogToEdit.id, dogData: updatedDog, file: newImageFile, scheduleFiles: newScheduleFiles });
     
     if (dogToEdit && dogToEdit.name !== updatedDog.name) {
       updateDogNameInRemindersMutation.mutate({ oldDogName: dogToEdit.name, newDogName: updatedDog.name });
@@ -648,6 +678,55 @@ const MyDogs = ({ reminderDueSoonDays }: MyDogsProps) => {
                         alt="Pet preview" 
                         className="h-24 w-24 rounded-lg object-cover border-2 border-slate-600"
                       />
+                    </div>
+                  )}
+                </div>
+
+                {/* Vaccination Schedule Images */}
+                <div className="space-y-2">
+                  <Label htmlFor="scheduleImages" className="text-sm font-medium text-white">
+                    Vaccination Schedule Images (Optional)
+                  </Label>
+                  <p className="text-xs text-slate-400 mb-2">
+                    Upload vaccination records, certificates, or schedule documents
+                  </p>
+                  <Input
+                    id="scheduleImages"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        const files = Array.from(e.target.files);
+                        setNewPetScheduleFiles(files);
+                        
+                        // Create previews
+                        const previews = files.map(file => URL.createObjectURL(file));
+                        setScheduleImagePreviews(previews);
+                      } else {
+                        setNewPetScheduleFiles([]);
+                        setScheduleImagePreviews([]);
+                      }
+                    }}
+                    className="w-full h-12 bg-slate-700 border-slate-600 text-white"
+                  />
+                  {scheduleImagePreviews.length > 0 && (
+                    <div className="mt-3">
+                      <p className="text-xs text-slate-400 mb-2">Selected images ({scheduleImagePreviews.length}):</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {scheduleImagePreviews.map((preview, index) => (
+                          <div key={index} className="relative">
+                            <img 
+                              src={preview} 
+                              alt={`Schedule ${index + 1}`} 
+                              className="h-20 w-full rounded-lg object-cover border-2 border-slate-600"
+                            />
+                            <div className="absolute top-1 right-1 bg-slate-900/80 rounded-full w-5 h-5 flex items-center justify-center text-xs text-white">
+                              {index + 1}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>

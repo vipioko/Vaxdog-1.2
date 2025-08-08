@@ -37,7 +37,7 @@ const popularCatBreeds = [
 interface EditDogDialogProps {
   dog: Dog;
   isOpen: boolean;
-  onSave: (updatedDog: Dog, newImageFile: File | null) => void;
+  onSave: (updatedDog: Dog, newImageFile: File | null, newScheduleFiles?: File[]) => void;
   onClose: () => void;
   onImageSelect: (file: File | null) => void;
   isSaving: boolean;
@@ -46,12 +46,16 @@ interface EditDogDialogProps {
 const EditDogDialog = ({ dog, isOpen, onSave, onClose, onImageSelect, isSaving }: EditDogDialogProps) => {
   const [editedDog, setEditedDog] = useState(dog);
   const [newImageFile, setNewImageFile] = useState<File | null>(null);
+  const [newScheduleFiles, setNewScheduleFiles] = useState<File[]>([]);
+  const [scheduleImagePreviews, setScheduleImagePreviews] = useState<string[]>([]);
   const [openBreedCombobox, setOpenBreedCombobox] = useState(false);
   const [breedSearch, setBreedSearch] = useState('');
 
   useEffect(() => {
     setEditedDog(dog);
     setNewImageFile(null);
+    setNewScheduleFiles([]);
+    setScheduleImagePreviews([]);
     setBreedSearch('');
   }, [dog]);
 
@@ -96,7 +100,7 @@ const EditDogDialog = ({ dog, isOpen, onSave, onClose, onImageSelect, isSaving }
   };
 
   const handleSave = () => {
-    onSave({ ...editedDog, age: Number(editedDog.age) }, newImageFile);
+    onSave({ ...editedDog, age: Number(editedDog.age) }, newImageFile, newScheduleFiles);
   };
 
   return (
@@ -343,6 +347,79 @@ const EditDogDialog = ({ dog, isOpen, onSave, onClose, onImageSelect, isSaving }
                   alt="Pet preview" 
                   className="h-24 w-24 rounded-lg object-cover border-2 border-slate-600"
                 />
+              </div>
+            )}
+          </div>
+
+          {/* Vaccination Schedule Images */}
+          <div className="space-y-2">
+            <Label htmlFor="scheduleImages" className="text-sm font-medium text-white">
+              Vaccination Schedule Images (Optional)
+            </Label>
+            <p className="text-xs text-slate-400 mb-2">
+              Upload vaccination records, certificates, or schedule documents
+            </p>
+            
+            {/* Existing Images */}
+            {editedDog.vaccinationScheduleImages && editedDog.vaccinationScheduleImages.length > 0 && (
+              <div className="mb-3">
+                <p className="text-xs text-slate-400 mb-2">Current images ({editedDog.vaccinationScheduleImages.length}):</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {editedDog.vaccinationScheduleImages.map((imageUrl, index) => (
+                    <div key={index} className="relative">
+                      <img 
+                        src={imageUrl} 
+                        alt={`Existing schedule ${index + 1}`} 
+                        className="h-20 w-full rounded-lg object-cover border-2 border-slate-600"
+                      />
+                      <div className="absolute top-1 right-1 bg-slate-900/80 rounded-full w-5 h-5 flex items-center justify-center text-xs text-white">
+                        {index + 1}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            <Input
+              id="scheduleImages"
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                  const files = Array.from(e.target.files);
+                  setNewScheduleFiles(files);
+                  
+                  // Create previews
+                  const previews = files.map(file => URL.createObjectURL(file));
+                  setScheduleImagePreviews(previews);
+                } else {
+                  setNewScheduleFiles([]);
+                  setScheduleImagePreviews([]);
+                }
+              }}
+              className="w-full h-12 bg-slate-700 border-slate-600 text-white"
+            />
+            
+            {/* New Images Preview */}
+            {scheduleImagePreviews.length > 0 && (
+              <div className="mt-3">
+                <p className="text-xs text-slate-400 mb-2">New images to upload ({scheduleImagePreviews.length}):</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {scheduleImagePreviews.map((preview, index) => (
+                    <div key={index} className="relative">
+                      <img 
+                        src={preview} 
+                        alt={`New schedule ${index + 1}`} 
+                        className="h-20 w-full rounded-lg object-cover border-2 border-green-500/50"
+                      />
+                      <div className="absolute top-1 right-1 bg-green-600/80 rounded-full w-5 h-5 flex items-center justify-center text-xs text-white">
+                        +{index + 1}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

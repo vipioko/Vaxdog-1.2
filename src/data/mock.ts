@@ -13,6 +13,7 @@ export interface Dog {
   matingInterest?: boolean;
   pregnancyCount?: number; // Only for female pets
   pupCount?: number; // Only for female pets
+  vaccinationScheduleImages?: string[]; // Multiple vaccination schedule images
 }
 
 export interface Reminder {
