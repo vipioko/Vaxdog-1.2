@@ -1,3 +1,4 @@
+// src/components/reminders/UpcomingReminders.tsx
 import { Reminder } from '@/data/mock';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Calendar as CalendarIconLucide, MoreVertical, Edit, Trash2 } from 'lucide-react';
@@ -8,7 +9,7 @@ import DeleteReminderDialog from './DeleteReminderDialog';
 import EditReminderDialog from './EditReminderDialog';
 import ReminderDetailsDialog from './ReminderDetailsDialog';
 import React from 'react';
-import { Transaction } from '@/hooks/useTransactions';
+import { Transaction } from '@/hooks/useTransactions'; // FIX: Import unified Transaction interface
 
 interface RemindersListProps {
   reminders: Reminder[];
@@ -17,7 +18,7 @@ interface RemindersListProps {
   onEditReminder?: (reminderId: string, updatedData: { vaccine: string; due: Date }) => void;
   title?: string;
   showDogName?: boolean;
-  transactions?: Transaction[];
+  transactions?: Transaction[]; // FIX: Use unified Transaction type
 }
 
 const UpcomingReminders = ({ reminders, onMarkAsComplete, onDeleteReminder, onEditReminder, title = "Upcoming Vaccinations", showDogName = true, transactions }: RemindersListProps) => {
@@ -25,8 +26,9 @@ const UpcomingReminders = ({ reminders, onMarkAsComplete, onDeleteReminder, onEd
   
   // Sort reminders: booked first, then by urgency
   const sortedUpcoming = upcoming.sort((a, b) => {
-    const aTransaction = transactions?.find(tx => tx.reminderId === a.id && tx.status === 'successful');
-    const bTransaction = transactions?.find(tx => tx.reminderId === b.id && tx.status === 'successful');
+    // FIX: Check for vaccination type transactions
+    const aTransaction = transactions?.find(tx => tx.type === 'vaccination' && tx.reminderId === a.id && tx.status === 'successful');
+    const bTransaction = transactions?.find(tx => tx.type === 'vaccination' && tx.reminderId === b.id && tx.status === 'successful');
     const aIsBooked = !!aTransaction;
     const bIsBooked = !!bTransaction;
     
@@ -51,7 +53,8 @@ const UpcomingReminders = ({ reminders, onMarkAsComplete, onDeleteReminder, onEd
         const daysUntilDue = differenceInDays(dueDate, today);
         const isOverdue = daysUntilDue < 0;
         const isDueSoon = daysUntilDue >= 0 && daysUntilDue <= 30;
-        const transaction = transactions?.find(tx => tx.reminderId === reminder.id && tx.status === 'successful');
+        // FIX: Check for vaccination type transactions
+        const transaction = transactions?.find(tx => tx.type === 'vaccination' && tx.reminderId === reminder.id && tx.status === 'successful');
         const isBooked = !!transaction;
 
         const getStatusColor = () => {
@@ -154,3 +157,4 @@ const UpcomingReminders = ({ reminders, onMarkAsComplete, onDeleteReminder, onEd
 };
 
 export default UpcomingReminders;
+
