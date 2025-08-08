@@ -539,7 +539,7 @@ const PetHostelBookingsList = () => {
                     <div className="text-center mb-4">
                       <h2 className="text-2xl font-bold text-white mb-1">#{bookingId}</h2>
                       <p className="text-slate-400 text-sm">
-                        Booking status: <span className={`font-medium ${
+                        Booking status: <span className={\`font-medium ${
                           booking.status === 'successful' ? 'text-green-400' :
                           booking.status === 'failed' ? 'text-red-400' : 'text-orange-400'
                         }`}>
@@ -659,7 +659,7 @@ const PetHostelBookingsList = () => {
 
                   {/* Status Badge */}
                   <div className="px-4 pb-4">
-                    <div className={`flex items-center justify-center gap-2 p-3 rounded-xl ${getStatusColor(booking.status)}`}>
+                    <div className={\`flex items-center justify-center gap-2 p-3 rounded-xl ${getStatusColor(booking.status)}`}>
                       {getStatusIcon(booking.status)}
                       <span className="font-medium">
                         {booking.status === 'successful' ? 'Payment Successful - Home Visit Scheduled' :
