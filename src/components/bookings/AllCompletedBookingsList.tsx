@@ -164,3 +164,5 @@ const AllCompletedBookingsList: React.FC<AllCompletedBookingsListProps> = ({ tra
     </div>
   );
 };
+
+export default AllCompletedBookingsList;
