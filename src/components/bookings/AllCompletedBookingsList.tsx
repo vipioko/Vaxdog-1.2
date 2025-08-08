@@ -166,5 +166,4 @@ const AllCompletedBookingsList: React.FC<AllCompletedBookingsListProps> = ({ tra
   );
 };
 
-export default AllCompletedBookingsList;
 ```
