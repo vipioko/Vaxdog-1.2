@@ -1,19 +1,18 @@
+// src/components/bookings/BookingsList.tsx
 import React from 'react';
-import { Transaction } from '@/hooks/useTransactions';
+import { Transaction } from '@/hooks/useTransactions'; // FIX: Import unified Transaction interface
 import { Card, CardContent } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
-import { Home, IndianRupee, Calendar, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Home, IndianRupee, Calendar, CheckCircle, XCircle, Clock, Stethoscope } from 'lucide-react'; // FIX: Add Stethoscope icon
 
 interface BookingsListProps {
     transactions?: Transaction[];
 }
 
 const BookingsList: React.FC<BookingsListProps> = ({ transactions }) => {
-    const homeBookings = transactions?.filter(tx => 
-        tx.service.toLowerCase().includes('home vaccination') ||
-        tx.service.toLowerCase().includes('vaccination')
-    ) || [];
+    // FIX: This component now specifically handles 'vaccination' type transactions
+    const vaccinationBookings = transactions?.filter(tx => tx.type === 'vaccination') || [];
 
     const getStatusColor = (status: string) => {
         switch (status.toLowerCase()) {
@@ -52,7 +51,7 @@ const BookingsList: React.FC<BookingsListProps> = ({ transactions }) => {
         }
     };
 
-    if (homeBookings.length === 0) {
+    if (vaccinationBookings.length === 0) {
         return (
              <div className="text-center text-slate-400 py-8">
                 <Home className="h-12 w-12 mx-auto mb-3 opacity-50" />
@@ -64,12 +63,12 @@ const BookingsList: React.FC<BookingsListProps> = ({ transactions }) => {
 
     return (
         <div className="space-y-3">
-            {homeBookings.map((tx) => (
+            {vaccinationBookings.map((tx) => (
                 <div key={tx.id} className="p-4 bg-slate-800/30 rounded-lg border-l-4 border-l-blue-500">
                     <div className="flex items-start justify-between gap-4 mb-3">
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-2">
-                                <Home className="h-4 w-4 text-blue-400 flex-shrink-0" />
+                                <Stethoscope className="h-4 w-4 text-blue-400 flex-shrink-0" /> {/* FIX: Use Stethoscope for vaccination */}
                                 <p className="font-semibold text-white text-sm truncate">{tx.service}</p>
                             </div>
                             
@@ -126,3 +125,4 @@ const BookingsList: React.FC<BookingsListProps> = ({ transactions }) => {
 };
 
 export default BookingsList;
+
