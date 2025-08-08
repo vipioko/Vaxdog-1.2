@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, IndianRupee, Clock, ChevronLeft, ChevronRight, Scissors } from 'lucide-react';
+import ServiceBookingDialog from '@/components/ServiceBookingDialog';
 import { useGroomingServices } from '@/hooks/useGroomingServices';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -166,9 +167,10 @@ const GroomingServiceDetail = () => {
         </div>
 
         <Button 
-          className="w-full bg-purple-500 hover:bg-purple-600 text-white h-12 font-semibold"
-          // onClick={handleBookGrooming} // To be implemented later
+          className="w-full bg-purple-500 hover:bg-purple-600 text-white h-12 font-semibold" // To be implemented later
         >
+          <ServiceBookingDialog serviceType="grooming" service={service}>
+          
           <Scissors className="h-5 w-5 mr-2" />
           Book Home Grooming
         </Button>
@@ -177,6 +179,7 @@ const GroomingServiceDetail = () => {
           <Card className="bg-slate-800/50 border-slate-700">
             <CardContent className="p-4">
               <h3 className="text-lg font-semibold mb-3 text-white">Service Details</h3>
+          </ServiceBookingDialog>
               <p className="text-slate-300 text-sm leading-relaxed">
                 {service.description}
               </p>

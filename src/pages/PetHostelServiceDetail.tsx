@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, IndianRupee, Users, MapPin, ChevronLeft, ChevronRight, Home as HomeIcon } from 'lucide-react';
+import ServiceBookingDialog from '@/components/ServiceBookingDialog';
 import { usePetHostelServices } from '@/hooks/usePetHostelServices';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -169,9 +170,10 @@ const PetHostelServiceDetail = () => {
         </div>
 
         <Button 
-          className="w-full bg-blue-500 hover:bg-blue-600 text-white h-12 font-semibold"
-          // onClick={handleBookHostel} // This can be implemented later
+          className="w-full bg-blue-500 hover:bg-blue-600 text-white h-12 font-semibold" // This can be implemented later
         >
+          <ServiceBookingDialog serviceType="petHostel" service={service}>
+          
           <HomeIcon className="h-5 w-5 mr-2" />
           Book Pet Hostel
         </Button>
@@ -180,6 +182,7 @@ const PetHostelServiceDetail = () => {
           <Card className="bg-slate-800/50 border-slate-700">
             <CardContent className="p-4">
               <h3 className="text-lg font-semibold mb-3 text-white">Service Details</h3>
+          </ServiceBookingDialog>
               <p className="text-slate-300 text-sm leading-relaxed">
                 {service.description}
               </p>
