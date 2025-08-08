@@ -75,7 +75,10 @@ const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({ availableSlots, selecte
                 key={slot.id}
                 variant={selectedSlotId === slot.id ? 'default' : 'outline'}
                 onClick={() => onSlotSelect(slot.id)}
-                className="w-full"
+                className={cn(
+                  "w-full",
+                  selectedSlotId !== slot.id && "text-black"
+                )}
               >
                 {format(slot.datetime.toDate(), 'h:mm a')}
               </Button>
