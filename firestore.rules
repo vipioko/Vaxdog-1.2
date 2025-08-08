@@ -23,6 +23,7 @@ service cloud.firestore {
     }
 
     // Rule for a user to access their own data, including their subcollections
+    // This rule correctly handles the creation of documents in subcollections like 'transactions'.
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
       
@@ -43,25 +44,17 @@ service cloud.firestore {
 
     // Rules for the doctors collection
     match /doctors/{doctorId} {
-      // Doctors can read/write their own profile
-      allow read, write: if request.auth != null && request.auth.uid == doctorId;
-      // Admins can read/write all doctor profiles
-      allow read, write: if isAdmin();
+      allow read, write: if (request.auth != null && request.auth.uid == doctorId) || isAdmin();
     }
 
     // Rules for doctor's services subcollection
     match /doctors/{doctorId}/services/{serviceId} {
-      // Doctors can manage their own services
-      allow read, write: if request.auth != null && request.auth.uid == doctorId;
-      // Admins can manage all doctor services
-      allow read, write: if isAdmin();
+      allow read, write: if (request.auth != null && request.auth.uid == doctorId) || isAdmin();
     }
     
     // Rules for vaccine products with categories
     match /products/{productId} {
-      // Any authenticated user can read product info (e.g., for booking)
       allow read: if request.auth != null;
-      // Only admins can create, update, or delete products
       allow create, update, delete: if isAdmin();
     }
 
@@ -69,23 +62,26 @@ service cloud.firestore {
     match /bookingSlots/{slotId} {
       allow read: if request.auth != null;
       
-      // Admins can create, update, or delete slots
-      allow create, update, delete: if isAdmin();
+      allow create, delete: if isAdmin();
       
-      // A regular user can update a slot only to book it
-      allow update: if 
-        request.auth != null &&
-        resource.data.isBooked == false && // The slot must be available
-        request.resource.data.isBooked == true && // It can only be changed to 'booked'
-        request.resource.data.bookedBy == request.auth.uid && // The user must book it for themselves
-        request.resource.data.keys().hasAll(['isBooked', 'bookedBy']) && // Only these fields can be updated
-        request.resource.data.keys().hasOnly(['isBooked', 'bookedBy', 'transactionId']); // Prevent updating other fields
+      // This is the key rule for the booking transaction.
+      allow update: if
+        isAdmin() || 
+        (
+          request.auth != null &&
+          resource.data.isBooked == false && 
+          request.resource.data.isBooked == true && 
+          request.resource.data.bookedBy == request.auth.uid && 
+          request.resource.data.keys().hasOnly(['isBooked', 'bookedBy', 'transactionId'])
+        );
     }
     
-    // This rule is CRUCIAL for the Admin "All Bookings" table.
-    // It allows an admin to perform a collection group query across all subcollections.
+    // This rule allows admins/doctors to perform a collection group query across all transactions.
     match /{path=**}/transactions/{transactionId} {
-      allow read: if isAdmin();
+      // Combined read permissions for clarity
+      allow read: if isAdmin() || (isDoctor() && resource.data.assignedDoctorId == request.auth.uid);
+      // NOTE: An 'allow create' rule here is redundant and has been removed.
+      // The `match /users/{userId}` rule above correctly and more securely handles create permission.
     }
     
     // Allow admins to read all dogs data for transaction details
