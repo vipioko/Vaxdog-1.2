@@ -35,6 +35,34 @@ service firebase.storage {
         exists(/databases/$(database)/documents/admins/$(request.auth.token.phone_number));
     }
     
+    // Specific rules for grooming services folder (admin only)
+    match /groomingServices/{serviceId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null && 
+        exists(/databases/$(database)/documents/admins/$(request.auth.token.phone_number));
+    }
+    
+    // Specific rules for grooming services gallery folder (admin only)
+    match /groomingServices/gallery/{serviceId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null && 
+        exists(/databases/$(database)/documents/admins/$(request.auth.token.phone_number));
+    }
+    
+    // Specific rules for pet hostel services folder (admin only)
+    match /petHostelServices/{serviceId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null && 
+        exists(/databases/$(database)/documents/admins/$(request.auth.token.phone_number));
+    }
+    
+    // Specific rules for pet hostel services gallery folder (admin only)
+    match /petHostelServices/gallery/{serviceId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null && 
+        exists(/databases/$(database)/documents/admins/$(request.auth.token.phone_number));
+    }
+    
     // User-specific folders (for pet images, etc.)
     match /users/{userId}/{allPaths=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;

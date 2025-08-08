@@ -24,3 +24,30 @@ export interface Reminder {
   status: 'upcoming' | 'completed';
   completedDate?: string;
 }
+
+export interface GroomingService {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  duration: number; // in minutes
+  imageUrl?: string;
+  galleryImages?: string[];
+  isActive: boolean;
+  createdAt?: any;
+  updatedAt?: any;
+}
+
+export interface PetHostelService {
+  id: string;
+  name: string;
+  description: string;
+  dailyRate: number;
+  capacity: number;
+  amenities?: string[];
+  imageUrl?: string;
+  galleryImages?: string[];
+  isActive: boolean;
+  createdAt?: any;
+  updatedAt?: any;
+}
