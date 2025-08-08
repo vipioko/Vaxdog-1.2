@@ -10,6 +10,13 @@ service cloud.firestore {
              exists(/databases/$(database)/documents/admins/$(request.auth.token.phone_number));
     }
 
+    // Helper function to check if the requesting user is a doctor
+    function isDoctor() {
+      // Doctors are identified by their UID being in the 'doctors' collection.
+      return request.auth.uid != null && 
+             exists(/databases/$(database)/documents/doctors/$(request.auth.uid));
+    }
+
     // Allow admins to list all users (required for admin dashboard)
     match /users {
       allow list: if isAdmin();
@@ -33,6 +40,22 @@ service cloud.firestore {
     match /admins/{phoneNumber} {
       allow read: if request.auth != null;
     }
+
+    // Rules for the doctors collection
+    match /doctors/{doctorId} {
+      // Doctors can read/write their own profile
+      allow read, write: if request.auth != null && request.auth.uid == doctorId;
+      // Admins can read/write all doctor profiles
+      allow read, write: if isAdmin();
+    }
+
+    // Rules for doctor's services subcollection
+    match /doctors/{doctorId}/services/{serviceId} {
+      // Doctors can manage their own services
+      allow read, write: if request.auth != null && request.auth.uid == doctorId;
+      // Admins can manage all doctor services
+      allow read, write: if isAdmin();
+    }
     
     // Rules for vaccine products with categories
     match /products/{productId} {
@@ -44,25 +67,19 @@ service cloud.firestore {
 
     // Rules for booking slots
     match /bookingSlots/{slotId} {
-      // Any authenticated user can read available slots
       allow read: if request.auth != null;
       
-      // Admins can create and delete slots
-      allow create, delete: if isAdmin();
+      // Admins can create, update, or delete slots
+      allow create, update, delete: if isAdmin();
       
-      // Rules for updating slots
+      // A regular user can update a slot only to book it
       allow update: if 
-        // Admins can update any field on a slot
-        isAdmin() ||
-        // A regular user can update a slot only to book it
-        (
-          request.auth != null &&
-          resource.data.isBooked == false && // The slot must be available
-          request.resource.data.isBooked == true && // It can only be changed to 'booked'
-          request.resource.data.bookedBy == request.auth.uid && // The user must book it for themselves
-          request.resource.data.keys().hasAll(['isBooked', 'bookedBy']) && // Only these fields can be updated
-          request.resource.data.keys().hasOnly(['isBooked', 'bookedBy', 'transactionId']) // Prevent updating other fields
-        );
+        request.auth != null &&
+        resource.data.isBooked == false && // The slot must be available
+        request.resource.data.isBooked == true && // It can only be changed to 'booked'
+        request.resource.data.bookedBy == request.auth.uid && // The user must book it for themselves
+        request.resource.data.keys().hasAll(['isBooked', 'bookedBy']) && // Only these fields can be updated
+        request.resource.data.keys().hasOnly(['isBooked', 'bookedBy', 'transactionId']); // Prevent updating other fields
     }
     
     // This rule is CRUCIAL for the Admin "All Bookings" table.
