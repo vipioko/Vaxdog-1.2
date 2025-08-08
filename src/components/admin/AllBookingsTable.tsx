@@ -351,7 +351,7 @@ const AllBookingsTable: React.FC = () => {
                                             {selectedBooking.vaccines.map((vaccine, index) => (
                                                 <li key={index}>{vaccine.name} (₹{vaccine.price.toFixed(2)})</li>
                                             ))}
-                                        </div>
+                                        </ul>
                                     </div>
                                 )}
 
