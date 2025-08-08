@@ -1,3 +1,4 @@
+// src/components/reminders/ReminderDetailsDialog.tsx
 import React from 'react';
 import {
   Dialog,
@@ -14,14 +15,14 @@ import { Badge } from '@/components/ui/badge';
 import { Reminder } from '@/data/mock';
 import { Calendar, Dog, Home, Stethoscope, CheckCircle, IndianRupee } from 'lucide-react';
 import BookingFormDialog from './BookingFormDialog';
-import { Transaction } from '@/hooks/useTransactions';
+import { Transaction } from '@/hooks/useTransactions'; // FIX: Import unified Transaction interface
 import { format } from 'date-fns';
 
 interface ReminderDetailsDialogProps {
   reminder: Reminder;
   children: React.ReactNode;
   isBooked?: boolean;
-  transaction?: Transaction;
+  transaction?: Transaction; // FIX: Use unified Transaction type
 }
 
 const ReminderDetailsDialog: React.FC<ReminderDetailsDialogProps> = ({ reminder, children, isBooked, transaction }) => {
@@ -61,7 +62,7 @@ const ReminderDetailsDialog: React.FC<ReminderDetailsDialogProps> = ({ reminder,
                   <p className="font-semibold text-white">{reminder.due}</p>
               </div>
           </div>
-          {isBooked && transaction && (
+          {isBooked && transaction && transaction.type === 'vaccination' && ( // FIX: Check transaction type
             <div className="rounded-md border border-green-500/30 bg-green-500/10 p-4 space-y-3 mt-4">
               <h4 className="font-semibold flex items-center text-green-300">
                 <CheckCircle className="mr-2 h-5 w-5" />
@@ -71,7 +72,7 @@ const ReminderDetailsDialog: React.FC<ReminderDetailsDialogProps> = ({ reminder,
                 <div className="flex justify-between items-center">
                   <span className="font-medium text-slate-400">Booking Date:</span>
                   <span className="font-medium text-white">
-                    {format(transaction.createdAt.toDate(), 'MMM d, yyyy, p')}
+                    {transaction.createdAt ? format(transaction.createdAt.toDate(), 'MMM d, yyyy, p') : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -112,3 +113,4 @@ const ReminderDetailsDialog: React.FC<ReminderDetailsDialogProps> = ({ reminder,
 };
 
 export default ReminderDetailsDialog;
+
