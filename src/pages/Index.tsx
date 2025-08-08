@@ -4,16 +4,20 @@ import { Input } from '@/components/ui/input';
 import { LogIn } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from 'firebase/auth';
-import { auth } from '@/firebase';
+import { auth, db } from '@/firebase';
 import { toast } from 'sonner';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'; // Import Firestore functions
+import { useAuth } from '@/providers/AuthProvider'; // Import useAuth hook
 
 const Index = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showRoleSelection, setShowRoleSelection] = useState(false); // New state for role selection
   const navigate = useNavigate();
   const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
+  const { user: authUser, loading: authLoading, userRole } = useAuth(); // Get user and loading from AuthProvider
 
   useEffect(() => {
     // Initialize RecaptchaVerifier once when component mounts
@@ -43,6 +47,16 @@ const Index = () => {
       }
     };
   }, []);
+
+  // Redirect if user is already authenticated and has a role
+  useEffect(() => {
+    if (!authLoading && authUser && userRole) {
+      // AuthProvider has already determined the user's role, App.tsx will handle navigation
+      // We just need to ensure this component doesn't show role selection if already set
+      setShowRoleSelection(false);
+    }
+  }, [authUser, authLoading, userRole]);
+
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,14 +122,63 @@ const Index = () => {
       setLoading(true);
       try {
           await confirmationResult.confirm(otpString);
-          toast.success('Logged in successfully! Redirecting...');
-          // Redirection is now handled automatically by the main App component
-          // based on the user's admin status from the AuthProvider.
+          
+          const currentUser = auth.currentUser;
+          if (currentUser) {
+            const userDocRef = doc(db, 'users', currentUser.uid);
+            const userDoc = await getDoc(userDocRef);
+
+            if (userDoc.exists() && userDoc.data()?.role) {
+              // User already has a role, proceed to dashboard (AuthProvider will handle redirect)
+              toast.success('Logged in successfully! Redirecting...');
+            } else {
+              // New user or user without a role, show role selection
+              setShowRoleSelection(true);
+              toast.info('Please select your role.');
+            }
+          } else {
+            toast.error('Authentication failed. Please try again.');
+          }
       } catch (error: any) {
           console.error("Error verifying OTP:", error);
           toast.error(`Invalid OTP. Please try again.`);
+      } finally {
           setLoading(false);
       }
+  };
+
+  const handleRoleSelection = async (role: 'petOwner' | 'veterinaryDoctor') => {
+    setLoading(true);
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        toast.error('User not authenticated. Please log in again.');
+        return;
+      }
+
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      await setDoc(userDocRef, { role, updatedAt: serverTimestamp() }, { merge: true }); // Update user document with role
+
+      if (role === 'veterinaryDoctor') {
+        const doctorDocRef = doc(db, 'doctors', currentUser.uid);
+        await setDoc(doctorDocRef, {
+          uid: currentUser.uid,
+          name: currentUser.displayName || 'Veterinary Doctor',
+          phoneNumber: currentUser.phoneNumber,
+          email: currentUser.email,
+          createdAt: serverTimestamp(),
+        }, { merge: true }); // Create doctor profile
+      }
+
+      toast.success(`Role set as ${role === 'petOwner' ? 'Pet Owner' : 'Veterinary Doctor'}!`);
+      setShowRoleSelection(false); // Hide role selection UI
+      // AuthProvider will re-evaluate and App.tsx will handle the final navigation
+    } catch (error: any) {
+      console.error('Error setting role:', error);
+      toast.error(`Failed to set role: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -132,6 +195,15 @@ const Index = () => {
     
     setPhoneNumber(value);
   };
+
+  // If AuthProvider is still loading or user is already logged in with a role, show loading or let App.tsx handle
+  if (authLoading || (authUser && userRole)) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <h1 className="text-2xl font-semibold animate-pulse">Loading VaxDog...</h1>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col items-center justify-center p-4 relative overflow-hidden">
@@ -158,10 +230,10 @@ const Index = () => {
           </div>
           
           <h1 className="text-3xl font-bold text-white mb-2">
-            {!confirmationResult ? 'Hello Guest!' : 'Verify OTP'}
+            {!confirmationResult ? 'Hello Guest!' : (showRoleSelection ? 'Choose Your Role' : 'Verify OTP')}
           </h1>
           <p className="text-slate-400 text-base">
-            {!confirmationResult ? 'Welcome to the Pawlly care' : 'Enter the verification code'}
+            {!confirmationResult ? 'Welcome to the Pawlly care' : (showRoleSelection ? 'Are you a pet owner or a veterinary doctor?' : 'Enter the verification code')}
           </p>
         </div>
 
@@ -231,72 +303,91 @@ const Index = () => {
               </Button>
             </>
           ) : (
-            <>
-              <div className="text-center mb-8">
-                <div className="flex items-center justify-center mb-6">
-                  <div className="flex items-center gap-3 px-4 py-2 bg-slate-700/50 rounded-2xl">
-                    <span className="text-2xl">🇮🇳</span>
-                    <span className="text-lg font-medium text-white">{phoneNumber}</span>
-                  </div>
-                </div>
-                <p className="text-slate-400 text-sm leading-relaxed">
-                  Enter the 6-digit verification code<br />sent to your mobile number
-                </p>
-              </div>
-
-              <form className="space-y-8" onSubmit={handleVerifyOtp}>
-                <div className="flex justify-center">
-                  <div className="grid grid-cols-6 gap-3 w-full max-w-xs">
-                    {otp.map((digit, index) => (
-                      <input
-                        key={index}
-                        id={`otp-${index}`}
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        maxLength={1}
-                        value={digit}
-                        onChange={(e) => handleOtpChange(index, e.target.value)}
-                        onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                        className="w-full h-16 text-center text-xl font-bold bg-slate-700/50 border-2 border-slate-600 text-white rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-all duration-200"
-                        autoComplete="one-time-code"
-                      />
-                    ))}
-                  </div>
-                </div>
-
+            showRoleSelection ? (
+              <div className="space-y-6">
                 <Button 
-                  type="submit" 
-                  className="w-full h-14 text-base font-semibold rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 shadow-xl transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]" 
+                  className="w-full h-14 text-base font-semibold rounded-2xl bg-purple-500 hover:bg-purple-600 text-white shadow-xl"
+                  onClick={() => handleRoleSelection('petOwner')}
                   disabled={loading}
                 >
-                  {loading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      Verifying...
+                  {loading ? 'Saving...' : 'I am a Pet Owner'}
+                </Button>
+                <Button 
+                  className="w-full h-14 text-base font-semibold rounded-2xl bg-blue-500 hover:bg-blue-600 text-white shadow-xl"
+                  onClick={() => handleRoleSelection('veterinaryDoctor')}
+                  disabled={loading}
+                >
+                  {loading ? 'Saving...' : 'I am a Veterinary Doctor'}
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="text-center mb-8">
+                  <div className="flex items-center justify-center mb-6">
+                    <div className="flex items-center gap-3 px-4 py-2 bg-slate-700/50 rounded-2xl">
+                      <span className="text-2xl">🇮🇳</span>
+                      <span className="text-lg font-medium text-white">{phoneNumber}</span>
                     </div>
-                  ) : (
-                    'Verify & Log In'
-                  )}
-                </Button>
-              </form>
+                  </div>
+                  <p className="text-slate-400 text-sm leading-relaxed">
+                    Enter the 6-digit verification code<br />sent to your mobile number
+                  </p>
+                </div>
 
-              <div className="mt-6 text-center">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => { 
-                    setConfirmationResult(null); 
-                    setOtp(['', '', '', '', '', '']); 
-                    setPhoneNumber(''); 
-                  }} 
-                  className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 rounded-xl transition-all duration-200" 
-                  disabled={loading}
-                >
-                  Change number
-                </Button>
-              </div>
-            </>
+                <form className="space-y-8" onSubmit={handleVerifyOtp}>
+                  <div className="flex justify-center">
+                    <div className="grid grid-cols-6 gap-3 w-full max-w-xs">
+                      {otp.map((digit, index) => (
+                        <input
+                          key={index}
+                          id={`otp-${index}`}
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={1}
+                          value={digit}
+                          onChange={(e) => handleOtpChange(index, e.target.value)}
+                          onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                          className="w-full h-16 text-center text-xl font-bold bg-slate-700/50 border-2 border-slate-600 text-white rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-all duration-200"
+                          autoComplete="one-time-code"
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <Button 
+                    type="submit" 
+                    className="w-full h-14 text-base font-semibold rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 shadow-xl transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]" 
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        Verifying...
+                      </div>
+                    ) : (
+                      'Verify & Log In'
+                    )}
+                  </Button>
+                </form>
+
+                <div className="mt-6 text-center">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => { 
+                      setConfirmationResult(null); 
+                      setOtp(['', '', '', '', '', '']); 
+                      setPhoneNumber(''); 
+                    }} 
+                    className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 rounded-xl transition-all duration-200" 
+                    disabled={loading}
+                  >
+                    Change number
+                  </Button>
+                </div>
+              </>
+            )
           )}
         </div>
 
