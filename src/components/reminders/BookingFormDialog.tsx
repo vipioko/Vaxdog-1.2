@@ -161,7 +161,8 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
             const transactionCollectionRef = collection(db, 'users', user!.uid, 'transactions');
             const newTransactionRef = doc(transactionCollectionRef);
 
-            batch.set(newTransactionRef, {
+            // Data for the new transaction
+            const transactionData = {
               paymentId: response.razorpay_payment_id,
               amount: totalAmount,
               currency: 'INR',
@@ -174,17 +175,30 @@ const BookingFormDialog: React.FC<BookingFormDialogProps> = ({ reminder, childre
               reminderId: reminder.id,
               slotId: selectedSlot!.id,
               slotDatetime: selectedSlot!.datetime,
-              userId: user!.uid, // Good practice: store userId for easier queries
-            });
+              userId: user!.uid,
+            };
+
+            batch.set(newTransactionRef, transactionData);
 
             const slotDocRef = doc(db, 'bookingSlots', selectedSlot!.id);
-            batch.update(slotDocRef, {
+            
+            // Data for the slot update
+            const slotUpdateData = {
               isBooked: true,
               bookedBy: user!.uid,
               transactionId: newTransactionRef.id,
-            });
+            };
+            
+            batch.update(slotDocRef, slotUpdateData);
 
-            await batch.commit();
+            // --- START: CRITICAL DIAGNOSTIC LOGGING ---
+            console.log("--- PRE-COMMIT DEBUG ---");
+            console.log("Is user object available?", !!user);
+            console.log("User UID:", user?.uid);
+            console.log("Slot ID being updated:", selectedSlot!.id);
+            console.log("Data for Transaction SET:", JSON.stringify(transactionData, null, 2));
+            console.log("Data for Slot UPDATE:", JSON.stringify(slotUpdateData, null, 2));
+            console.log("--- END DEBUG ---");
 
             queryClient.invalidateQueries({ queryKey: ['transactions', user?.uid] });
             queryClient.invalidateQueries({ queryKey: ['availableSlots'] });
