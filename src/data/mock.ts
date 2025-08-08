@@ -51,3 +51,44 @@ export interface PetHostelService {
   createdAt?: any;
   updatedAt?: any;
 }
+
+export interface BaseBooking {
+  id: string;
+  userId: string;
+  petId: string;
+  petName: string;
+  serviceId: string;
+  serviceName: string;
+  amount: number;
+  paymentMethod: 'razorpay' | 'cod';
+  paymentStatus: 'pending' | 'paid' | 'failed';
+  bookingStatus: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  customerDetails: {
+    name: string;
+    phone: string;
+    address: string;
+    city: string;
+    postalCode: string;
+    landmark?: string;
+  };
+  petDetails: {
+    name: string;
+    breed: string;
+    petType: string;
+  };
+  razorpayPaymentId?: string;
+  razorpayOrderId?: string;
+  createdAt?: any;
+  updatedAt?: any;
+}
+
+export interface GroomingBooking extends BaseBooking {
+  preferredDate: string; // YYYY-MM-DD
+  preferredTime: string; // HH:MM
+}
+
+export interface PetHostelBooking extends BaseBooking {
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD
+  foodPreference?: 'veg' | 'non-veg' | 'both';
+}
