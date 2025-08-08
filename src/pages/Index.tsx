@@ -196,6 +196,14 @@ const Index = () => {
     setPhoneNumber(value);
   };
 
+  // Function to reset the form to the initial phone number input state
+  const resetToPhoneNumberInput = () => {
+    setConfirmationResult(null);
+    setOtp(['', '', '', '', '', '']);
+    setPhoneNumber('');
+    setShowRoleSelection(false);
+  };
+
   // If AuthProvider is still loading or user is already logged in with a role, show loading or let App.tsx handle
   if (authLoading || (authUser && userRole)) {
     return (
@@ -280,7 +288,14 @@ const Index = () => {
 
               <div className="mt-8 text-center">
                 <p className="text-slate-400 text-sm">
-                  Not registered? <span className="text-purple-400 underline cursor-pointer hover:text-purple-300 transition-colors">Register Now</span>
+                  Not registered?{' '}
+                  <Button
+                    variant="link"
+                    className="p-0 h-auto text-purple-400 hover:text-purple-300 transition-colors"
+                    onClick={resetToPhoneNumberInput} // Call the reset function
+                  >
+                    Register Now
+                  </Button>
                 </p>
               </div>
 
