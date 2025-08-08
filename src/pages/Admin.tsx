@@ -10,6 +10,8 @@ import DoctorManagement from '@/components/admin/DoctorManagement';
 import BookingAssignment from '@/components/admin/BookingAssignment';
 import GroomingServiceManagement from '@/components/admin/GroomingServiceManagement';
 import PetHostelManagement from '@/components/admin/PetHostelManagement';
+import GroomingBookingManagement from '@/components/admin/GroomingBookingManagement';
+import PetHostelBookingManagement from '@/components/admin/PetHostelBookingManagement';
 
 const Admin = () => {
   return (
@@ -28,176 +30,119 @@ const Admin = () => {
       </div>
 
       <Tabs defaultValue="doctors" className="w-full">
+        {/* --- FIX: MERGED TabsList into one complete component --- */}
         <TabsList className="flex w-full overflow-x-auto whitespace-nowrap pb-2 scrollbar-hide text-sm bg-slate-800/50 border border-slate-700 rounded-lg p-1 gap-1">
-          <TabsTrigger 
-            value="doctors" 
-            className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0"
-          >
+          <TabsTrigger value="doctors" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0">
             Doctors
           </TabsTrigger>
-          <TabsTrigger 
-            value="assignments" 
-            className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0"
-          >
+          <TabsTrigger value="assignments" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0">
             Assignments
           </TabsTrigger>
-          <TabsTrigger 
-            value="orders" 
-            className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0"
-          >
+          <TabsTrigger value="orders" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0">
             Orders
           </TabsTrigger>
-          <TabsTrigger 
-            value="bookings" 
-            className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0"
-          >
+          <TabsTrigger value="bookings" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0">
             Bookings
           </TabsTrigger>
-          <TabsTrigger 
-            value="vaccines" 
-            className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0"
-          >
+          <TabsTrigger value="grooming-bookings" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0">
+            Grooming Bookings
+          </TabsTrigger>
+          <TabsTrigger value="pet-hostel-bookings" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0">
+            Pet Hostel Bookings
+          </TabsTrigger>
+          <TabsTrigger value="vaccines" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0">
             Vaccines
           </TabsTrigger>
-          <TabsTrigger 
-            value="categories" 
-            className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0"
-          >
+          <TabsTrigger value="categories" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0">
             Categories
           </TabsTrigger>
-          <TabsTrigger 
-            value="products" 
-            className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0"
-          >
+          <TabsTrigger value="products" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0">
             Shop Products
+          </TabsTrigger>
+          <TabsTrigger value="slots" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0">
+            Manage Slots
+          </TabsTrigger>
+          <TabsTrigger value="services" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-300 data-[state=active]:shadow-md hover:bg-slate-700/80 transition-colors duration-200 rounded-md px-4 py-2 flex-shrink-0">
+            Services
           </TabsTrigger>
         </TabsList>
         
         <TabsContent value="doctors" className="mt-6">
           <DoctorManagement />
         </TabsContent>
-        
         <TabsContent value="assignments" className="mt-6">
           <BookingAssignment />
         </TabsContent>
-        
         <TabsContent value="orders" className="mt-6">
           <OrderManagement />
         </TabsContent>
-        
         <TabsContent value="bookings" className="mt-6">
           <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
-                  <div className="text-white text-sm">📋</div>
-                </div>
-                All User Bookings
-              </CardTitle>
+              <CardTitle className="text-white">All User Bookings</CardTitle>
             </CardHeader>
             <CardContent>
               <AllBookingsTable />
             </CardContent>
           </Card>
         </TabsContent>
-        
+        <TabsContent value="grooming-bookings" className="mt-6">
+          <Card className="bg-slate-800/50 border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white">Grooming Bookings Management</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <GroomingBookingManagement />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="pet-hostel-bookings" className="mt-6">
+          <Card className="bg-slate-800/50 border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white">Pet Hostel Bookings Management</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PetHostelBookingManagement />
+            </CardContent>
+          </Card>
+        </TabsContent>
         <TabsContent value="vaccines" className="mt-6">
           <ProductManagement />
         </TabsContent>
-        
         <TabsContent value="categories" className="mt-6">
           <CategoryManagement />
         </TabsContent>
-        
         <TabsContent value="products" className="mt-6">
           <ShopProductManagement />
         </TabsContent>
-        
         <TabsContent value="slots" className="mt-6">
           <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
-                  <div className="text-white text-sm">⏰</div>
-                </div>
-                Manage Booking Slots
-              </CardTitle>
+              <CardTitle className="text-white">Manage Booking Slots</CardTitle>
             </CardHeader>
             <CardContent>
               <BookingSlotsManager />
             </CardContent>
           </Card>
         </TabsContent>
-        
         <TabsContent value="services" className="mt-6">
           <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
-                  <div className="text-white text-sm">🛎️</div>
-                </div>
-                Service Management
-              </CardTitle>
+              <CardTitle className="text-white">Service Management</CardTitle>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="grooming" className="w-full">
                 <TabsList className="grid w-full grid-cols-2 bg-slate-700/50 mb-6">
-                  <TabsTrigger 
-                    value="grooming" 
-                    className="data-[state=active]:bg-purple-500 data-[state=active]:text-white text-slate-300"
-                  >
+                  <TabsTrigger value="grooming" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white text-slate-300">
                     Grooming Services
                   </TabsTrigger>
-                  <TabsTrigger 
-                    value="hostel" 
-                    className="data-[state=active]:bg-blue-500 data-[state=active]:text-white text-slate-300"
-                  >
+                  <TabsTrigger value="hostel" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white text-slate-300">
                     Pet Boarding
                   </TabsTrigger>
                 </TabsList>
-                
                 <TabsContent value="grooming" className="mt-0">
                   <GroomingServiceManagement />
                 </TabsContent>
-                
-                <TabsContent value="hostel" className="mt-0">
-                  <PetHostelManagement />
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-
-      </Tabs>
-    </div>
-  );
-};
-
-export default Admin;
-```
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="grooming" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 bg-slate-700/50 mb-6">
-                  <TabsTrigger 
-                    value="grooming" 
-                    className="data-[state=active]:bg-purple-500 data-[state=active]:text-white text-slate-300"
-                  >
-                    Grooming Services
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="hostel" 
-                    className="data-[state=active]:bg-blue-500 data-[state=active]:text-white text-slate-300"
-                  >
-                    Pet Boarding
-                  </TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="grooming" className="mt-0">
-                  <GroomingServiceManagement />
-                </TabsContent>
-                
                 <TabsContent value="hostel" className="mt-0">
                   <PetHostelManagement />
                 </TabsContent>
