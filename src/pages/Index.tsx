@@ -15,6 +15,8 @@ const Index = () => {
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [showRoleSelection, setShowRoleSelection] = useState(false); // New state for role selection
+  const [isRegistering, setIsRegistering] = useState(false); // New state for registration mode
+  const [selectedRole, setSelectedRole] = useState<'petOwner' | 'veterinaryDoctor' | null>(null); // Selected role during registration
   const navigate = useNavigate();
   const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
   const { user: authUser, loading: authLoading, userRole } = useAuth(); // Get user and loading from AuthProvider
@@ -128,11 +130,14 @@ const Index = () => {
             const userDocRef = doc(db, 'users', currentUser.uid);
             const userDoc = await getDoc(userDocRef);
 
-            if (userDoc.exists() && userDoc.data()?.role) {
-              // User already has a role, proceed to dashboard (AuthProvider will handle redirect)
+            if (selectedRole) {
+              // This is a registration flow, complete the registration
+              await handleRegistrationComplete();
+            } else if (userDoc.exists() && userDoc.data()?.role) {
+              // Existing user with role, proceed to dashboard (AuthProvider will handle redirect)
               toast.success('Logged in successfully! Redirecting...');
             } else {
-              // New user or user without a role, show role selection
+              // Existing user without role or new user in login flow, show role selection
               setShowRoleSelection(true);
               toast.info('Please select your role.');
             }
@@ -181,6 +186,52 @@ const Index = () => {
     }
   };
 
+  // Handle role selection during registration
+  const handleRegistrationRoleSelection = (role: 'petOwner' | 'veterinaryDoctor') => {
+    setSelectedRole(role);
+    setIsRegistering(false); // Hide role selection, show phone input
+    toast.info(`Registering as ${role === 'petOwner' ? 'Pet Owner' : 'Veterinary Doctor'}. Please enter your phone number.`);
+  };
+
+  // Handle registration completion after OTP verification
+  const handleRegistrationComplete = async () => {
+    if (!selectedRole) return;
+    
+    setLoading(true);
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        toast.error('User not authenticated. Please log in again.');
+        return;
+      }
+
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      await setDoc(userDocRef, { role: selectedRole, updatedAt: serverTimestamp() }, { merge: true });
+
+      if (selectedRole === 'veterinaryDoctor') {
+        const doctorDocRef = doc(db, 'doctors', currentUser.uid);
+        await setDoc(doctorDocRef, {
+          uid: currentUser.uid,
+          name: currentUser.displayName || 'Veterinary Doctor',
+          phoneNumber: currentUser.phoneNumber,
+          email: currentUser.email,
+          createdAt: serverTimestamp(),
+          isActive: true,
+        }, { merge: true });
+      }
+
+      toast.success(`Successfully registered as ${selectedRole === 'petOwner' ? 'Pet Owner' : 'Veterinary Doctor'}!`);
+      setSelectedRole(null);
+      setIsRegistering(false);
+      // AuthProvider will re-evaluate and App.tsx will handle the final navigation
+    } catch (error: any) {
+      console.error('Error completing registration:', error);
+      toast.error(`Failed to complete registration: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
     
@@ -202,6 +253,8 @@ const Index = () => {
     setOtp(['', '', '', '', '', '']);
     setPhoneNumber('');
     setShowRoleSelection(false);
+    setIsRegistering(false);
+    setSelectedRole(null);
   };
 
   // If AuthProvider is still loading or user is already logged in with a role, show loading or let App.tsx handle
@@ -238,21 +291,65 @@ const Index = () => {
           </div>
           
           <h1 className="text-3xl font-bold text-white mb-2">
-            {!confirmationResult ? 'Hello Guest!' : (showRoleSelection ? 'Choose Your Role' : 'Verify OTP')}
+            {isRegistering ? 'Register Account' : 
+             !confirmationResult ? 'Hello Guest!' : 
+             (showRoleSelection ? 'Choose Your Role' : 
+              selectedRole ? `Registering as ${selectedRole === 'petOwner' ? 'Pet Owner' : 'Doctor'}` : 'Verify OTP')}
           </h1>
           <p className="text-slate-400 text-base">
-            {!confirmationResult ? 'Welcome to the Pawlly care' : (showRoleSelection ? 'Are you a pet owner or a veterinary doctor?' : 'Enter the verification code')}
+            {isRegistering ? 'Choose your account type to get started' :
+             !confirmationResult ? 'Welcome to the Pawlly care' : 
+             (showRoleSelection ? 'Are you a pet owner or a veterinary doctor?' : 
+              selectedRole ? 'Verify your phone number to complete registration' : 'Enter the verification code')}
           </p>
         </div>
 
         {/* Sign In Form Card */}
         <div className="bg-slate-800/60 backdrop-blur-xl p-6 sm:p-8 rounded-3xl border border-slate-700/50 shadow-2xl">
-          {!confirmationResult ? (
+          {isRegistering ? (
+            <div className="space-y-6">
+              <div className="text-center mb-6">
+                <h3 className="text-lg font-semibold text-white mb-2">Choose Your Account Type</h3>
+                <p className="text-slate-400 text-sm">Select the option that best describes you</p>
+              </div>
+              
+              <Button 
+                className="w-full h-16 text-base font-semibold rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-xl flex flex-col items-center justify-center gap-1"
+                onClick={() => handleRegistrationRoleSelection('petOwner')}
+                disabled={loading}
+              >
+                <span className="text-2xl">🐕</span>
+                <span>I am a Pet Owner</span>
+                <span className="text-xs opacity-80">Manage my pet's health and vaccinations</span>
+              </Button>
+              
+              <Button 
+                className="w-full h-16 text-base font-semibold rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white shadow-xl flex flex-col items-center justify-center gap-1"
+                onClick={() => handleRegistrationRoleSelection('veterinaryDoctor')}
+                disabled={loading}
+              >
+                <span className="text-2xl">🩺</span>
+                <span>I am a Veterinary Doctor</span>
+                <span className="text-xs opacity-80">Provide veterinary services to pet owners</span>
+              </Button>
+              
+              <div className="text-center">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setIsRegistering(false)}
+                  className="text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-xl"
+                >
+                  Back to Login
+                </Button>
+              </div>
+            </div>
+          ) : !confirmationResult ? (
             <>
               <form className="space-y-6" onSubmit={handleSendOtp}>
                 <div className="space-y-3">
                   <label className="text-sm font-medium text-slate-300 block">
-                    Phone Number
+                    {selectedRole ? `Phone Number (${selectedRole === 'petOwner' ? 'Pet Owner' : 'Doctor'} Registration)` : 'Phone Number'}
                   </label>
                   <div className="relative">
                     <div className="absolute left-4 top-1/2 transform -translate-y-1/2 flex items-center space-x-3">
@@ -268,6 +365,18 @@ const Index = () => {
                       disabled={loading}
                     />
                   </div>
+                  {selectedRole && (
+                    <div className="mt-2 p-3 bg-slate-700/30 rounded-lg border border-slate-600">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{selectedRole === 'petOwner' ? '🐕' : '🩺'}</span>
+                        <span className="text-sm text-slate-300">
+                          Registering as: <span className="font-semibold text-white">
+                            {selectedRole === 'petOwner' ? 'Pet Owner' : 'Veterinary Doctor'}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <Button 
@@ -281,58 +390,87 @@ const Index = () => {
                       Sending OTP...
                     </div>
                   ) : (
-                    'Send OTP'
+                    selectedRole ? 'Send OTP to Register' : 'Send OTP'
                   )}
                 </Button>
               </form>
 
-              <div className="mt-8 text-center">
-                <p className="text-slate-400 text-sm">
-                  Not registered?{' '}
-                  <Button
-                    variant="link"
-                    className="p-0 h-auto text-purple-400 hover:text-purple-300 transition-colors"
-                    onClick={resetToPhoneNumberInput} // Call the reset function
-                  >
-                    Register Now
-                  </Button>
-                </p>
-              </div>
-
-              <div className="mt-8 flex items-center">
-                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-600 to-transparent"></div>
-                <span className="px-4 text-slate-400 text-sm">Or sign in with</span>
-                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-600 to-transparent"></div>
-              </div>
-
-              <Button 
-                variant="outline" 
-                className="w-full mt-6 h-14 bg-slate-700/30 border-slate-600 text-white hover:bg-slate-600/50 rounded-2xl transition-all duration-200 hover:scale-[1.02]"
-              >
-                <div className="flex items-center justify-center gap-3">
-                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
-                    <span className="text-sm font-bold text-slate-900">G</span>
-                  </div>
-                  Sign In With Google
+              {!selectedRole && (
+                <div className="mt-8 text-center">
+                  <p className="text-slate-400 text-sm">
+                    Not registered?{' '}
+                    <Button
+                      variant="link"
+                      className="p-0 h-auto text-purple-400 hover:text-purple-300 transition-colors"
+                      onClick={() => setIsRegistering(true)}
+                    >
+                      Register Now
+                    </Button>
+                  </p>
                 </div>
-              </Button>
+              )}
+              
+              {selectedRole && (
+                <div className="mt-6 text-center">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => {
+                      setSelectedRole(null);
+                      setPhoneNumber('');
+                    }}
+                    className="text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-xl"
+                  >
+                    Change Role
+                  </Button>
+                </div>
+              )}
+
+              {!selectedRole && (
+                <>
+                  <div className="mt-8 flex items-center">
+                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-600 to-transparent"></div>
+                    <span className="px-4 text-slate-400 text-sm">Or sign in with</span>
+                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-600 to-transparent"></div>
+                  </div>
+
+                  <Button 
+                    variant="outline" 
+                    className="w-full mt-6 h-14 bg-slate-700/30 border-slate-600 text-white hover:bg-slate-600/50 rounded-2xl transition-all duration-200 hover:scale-[1.02]"
+                  >
+                    <div className="flex items-center justify-center gap-3">
+                      <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
+                        <span className="text-sm font-bold text-slate-900">G</span>
+                      </div>
+                      Sign In With Google
+                    </div>
+                  </Button>
+                </>
+              )}
             </>
           ) : (
             showRoleSelection ? (
               <div className="space-y-6">
+                <div className="text-center mb-4">
+                  <h3 className="text-lg font-semibold text-white mb-2">Complete Your Profile</h3>
+                  <p className="text-slate-400 text-sm">Choose your role to continue</p>
+                </div>
+                
                 <Button 
-                  className="w-full h-14 text-base font-semibold rounded-2xl bg-purple-500 hover:bg-purple-600 text-white shadow-xl"
+                  className="w-full h-16 text-base font-semibold rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-xl flex flex-col items-center justify-center gap-1"
                   onClick={() => handleRoleSelection('petOwner')}
                   disabled={loading}
                 >
-                  {loading ? 'Saving...' : 'I am a Pet Owner'}
+                  <span className="text-xl">🐕</span>
+                  <span>{loading ? 'Saving...' : 'I am a Pet Owner'}</span>
                 </Button>
                 <Button 
-                  className="w-full h-14 text-base font-semibold rounded-2xl bg-blue-500 hover:bg-blue-600 text-white shadow-xl"
+                  className="w-full h-16 text-base font-semibold rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white shadow-xl flex flex-col items-center justify-center gap-1"
                   onClick={() => handleRoleSelection('veterinaryDoctor')}
                   disabled={loading}
                 >
-                  {loading ? 'Saving...' : 'I am a Veterinary Doctor'}
+                  <span className="text-xl">🩺</span>
+                  <span>{loading ? 'Saving...' : 'I am a Veterinary Doctor'}</span>
                 </Button>
               </div>
             ) : (
@@ -347,6 +485,18 @@ const Index = () => {
                   <p className="text-slate-400 text-sm leading-relaxed">
                     Enter the 6-digit verification code<br />sent to your mobile number
                   </p>
+                  {selectedRole && (
+                    <div className="mt-4 p-3 bg-slate-700/30 rounded-lg border border-slate-600">
+                      <div className="flex items-center justify-center gap-2">
+                        <span className="text-lg">{selectedRole === 'petOwner' ? '🐕' : '🩺'}</span>
+                        <span className="text-sm text-slate-300">
+                          Registering as: <span className="font-semibold text-white">
+                            {selectedRole === 'petOwner' ? 'Pet Owner' : 'Veterinary Doctor'}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <form className="space-y-8" onSubmit={handleVerifyOtp}>
@@ -381,7 +531,7 @@ const Index = () => {
                         Verifying...
                       </div>
                     ) : (
-                      'Verify & Log In'
+                      selectedRole ? 'Verify & Complete Registration' : 'Verify & Log In'
                     )}
                   </Button>
                 </form>
@@ -394,11 +544,16 @@ const Index = () => {
                       setConfirmationResult(null); 
                       setOtp(['', '', '', '', '', '']); 
                       setPhoneNumber(''); 
+                      if (selectedRole) {
+                        // If in registration mode, go back to role selection
+                        setIsRegistering(true);
+                        setSelectedRole(null);
+                      }
                     }} 
                     className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 rounded-xl transition-all duration-200" 
                     disabled={loading}
                   >
-                    Change number
+                    {selectedRole ? 'Back to Role Selection' : 'Change number'}
                   </Button>
                 </div>
               </>
